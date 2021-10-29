@@ -1,0 +1,10 @@
+/.vscode
+/obj
+/objd
+/picod.exe
+/test.txt
+/test2.txt
+/src/test
+/src/old
+*.exe
+*.graphml
