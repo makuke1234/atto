@@ -1,5 +1,5 @@
 CC=gcc
-CDEFFLAGS=-std=c99 -Wall -Wextra -Wpedantic -Wconversion -Wunused-variable -municode
+CDEFFLAGS=-std=c99 -Wall -Wextra -Wpedantic -Wconversion -Wunused-variable -municode -D PROFILING_ENABLE=1
 CFLAGS=-O3 -Wl,--strip-all,--build-id=none -fno-ident
 CFLAGSD=-g -O0
 
