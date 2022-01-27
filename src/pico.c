@@ -115,6 +115,14 @@ pico_LNode * picoLNode_create(pico_LNode * curnode, pico_LNode * nextnode)
 	node->freeSpaceLen = PICO_LNODE_DEFAULT_FREE;
 	node->prevNode = curnode;
 	node->nextNode = nextnode;
+	if (curnode != NULL)
+	{
+		curnode->nextNode  = node;
+	}
+	if (nextnode != NULL)
+	{
+		nextnode->prevNode = node;
+	}
 
 	return node;
 }
