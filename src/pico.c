@@ -208,7 +208,7 @@ bool picoLNode_realloc(pico_LNode * restrict curnode)
 
 bool picoLNode_merge(pico_LNode * restrict node)
 {
-	if (node->nextNode != NULL)
+	if (node->nextNode == NULL)
 	{
 		return false;
 	}
@@ -221,20 +221,27 @@ bool picoLNode_merge(pico_LNode * restrict node)
 	{
 		return false;
 	}
-
 	node->line = linemem;
 
 	// Move cursor to end, if needed
-	if ((node->curx + node->freeSpaceLen) != node->lineEndx)
+	if ((node->curx + node->freeSpaceLen) < node->lineEndx)
 	{
-		memmove(node->line + node->curx, node->line + node->curx + node->freeSpaceLen, sizeof(wchar_t) * (node->lineEndx - node->curx - node->freeSpaceLen));
+		memmove(
+			node->line + node->curx,
+			node->line + node->curx + node->freeSpaceLen,
+			sizeof(wchar_t) * (node->lineEndx - node->curx - node->freeSpaceLen)
+		);
 		node->curx = node->lineEndx - node->freeSpaceLen;
 	}
 
 	// Move also other line's cursor to end if needed
-	if ((n->curx + n->freeSpaceLen) != n->lineEndx)
+	if ((n->curx + n->freeSpaceLen) < n->lineEndx)
 	{
-		memmove(n->line + n->curx, n->line + n->curx + n->freeSpaceLen, sizeof(wchar_t) * (n->lineEndx - n->curx - n->freeSpaceLen));
+		memmove(
+			n->line + n->curx,
+			n->line + n->curx + n->freeSpaceLen,
+			sizeof(wchar_t) * (n->lineEndx - n->curx - n->freeSpaceLen)
+		);
 		n->curx = n->lineEndx - n->freeSpaceLen;
 	}
 
@@ -320,7 +327,7 @@ void picoFile_clearLines(pico_File * restrict file)
 	while (node->nextNode != NULL)
 	{
 		node = node->nextNode;
-		free(node->prevNode);
+		picoLNode_destroy(node->nextNode);
 	}
 	free(node);
 }
@@ -476,7 +483,7 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 		{
 			for (int i = 0; i < 4; ++i)
 			{
-				picoFile_deleteForward(file);
+				picoFile_deleteBackward(file);
 			}
 		}
 		// If there isn't, check if there's 4 spaces after the caret
@@ -484,7 +491,7 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 		{
 			for (int i = 0; i < 4; ++i)
 			{
-				picoFile_deleteBackward(file);
+				picoFile_deleteForward(file);
 			}
 		}
 		break;
@@ -541,44 +548,43 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 	return true;
 }
 
+// TODO: remake
 bool picoFile_checkLineAt(const pico_File * restrict file, int32_t maxdelta, const wchar_t * string, uint32_t maxString)
 {
-	const pico_LNode * restrict cl = file->data.currentNode;
-	if (maxdelta >= 0 && cl->curx == cl->lineEndx)
+	const pico_LNode * restrict node = file->data.currentNode;
+	if (node == NULL)
 	{
 		return false;
 	}
-	if (maxdelta >= 0)
+
+	int32_t idx = (int32_t)node->curx + maxdelta, i = 0, m = (int32_t)maxString;
+	if (idx < 0)
 	{
-		uint32_t startx = cl->curx + cl->freeSpaceLen - 1;
-		startx += u32Min((uint32_t)maxdelta, cl->lineEndx - startx + 1);
-		return wcsncmp(cl->line + startx, string, maxString) == 0;
+		return false;
 	}
-	else
+	for (; idx < node->lineEndx && i < m && *string != '\0';)
 	{
-		uint32_t startx = cl->curx;
-		maxdelta = i32Min(maxdelta, (int32_t)startx);
-		uint32_t maxcomp = u32Min((uint32_t)maxdelta, maxString);
-		bool ret = wcsncmp(cl->line + startx - maxdelta, string, maxcomp) == 0;
-		if (ret == false)
+		if (idx == node->curx)
+		{
+			idx += node->freeSpaceLen;
+			continue;
+		}
+		
+		if (node->line[idx] != *string)
 		{
 			return false;
 		}
-		if (maxString > maxcomp)
-		{
-			if ((cl->curx + cl->freeSpaceLen) < cl->lineEndx)
-			{
-				string += maxcomp;
-				maxString -= maxcomp;
-				return wcsncmp(cl->line + cl->curx + cl->freeSpaceLen, string, maxString) == 0;
-			}
-			else
-			{
-				return false;
-			}
-		}
-		return true;
+
+		++string;
+		++i;
+		++idx;
 	}
+	if (*string != '\0' && i < m)
+	{
+		return false;
+	}
+
+	return true;
 }
 bool picoFile_deleteForward(pico_File * restrict file)
 {
