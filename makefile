@@ -36,7 +36,7 @@ release_obj: $(objs_r)
 	$(CC) $^ -o $(TARGET).exe $(CDEFFLAGS) $(CFLAGS)
 
 clean:
-	IF EXIST $(OBJ) rd /s /q $(OBJ)
-	IF EXIST $(OBJD) rd /s /q $(OBJD)
-	del $(TARGET).exe
-	del deb$(TARGET).exe
+	rm -r -f $(OBJ)
+	rm -r -f $(OBJD)
+	rm -f $(TARGET).exe
+	rm -f deb$(TARGET).exe

@@ -5,10 +5,10 @@
 
 #include "profiling.h"
 
-pico_File file;
-pico_DS editor;
+pico_File file = { 0 };
+pico_DS editor = { 0 };
 
-int wmain(int argc, const wchar_t ** argv)
+int wmain(int argc, const wchar_t * argv[])
 {
 	// Initialise profiler, if applicable
 	initProfiler();
@@ -46,11 +46,11 @@ int wmain(int argc, const wchar_t ** argv)
 	return 0;
 }
 
-bool boolarrGet(uint8_t * arr, const size_t index)
+bool boolGet(uint8_t * arr, const size_t index)
 {
 	return (arr[index / 8] >> (index % 8)) & 0x01;
 }
-void boolarrPut(uint8_t * arr, const size_t index, const bool value)
+void boolPut(uint8_t * arr, const size_t index, const bool value)
 {
 	const size_t in1 = index / 8;
 	const uint8_t pattern = 0x01 << (index - (8 * in1));
@@ -61,16 +61,26 @@ int32_t i32Min(int32_t a, int32_t b)
 {
 	return (a < b) ? a : b;
 }
+int32_t i32Max(int32_t a, int32_t b)
+{
+	return (a < b) ? b : a;
+}
 uint32_t u32Min(uint32_t a, uint32_t b)
 {
 	return (a < b) ? a : b;
+}
+uint32_t u32Max(uint32_t a, uint32_t b)
+{
+	return (a < b) ? b : a;
 }
 
 pico_LNode * picoLNode_create(pico_LNode * curnode, pico_LNode * nextnode)
 {
 	pico_LNode * node = malloc(sizeof(pico_LNode));
 	if (node == NULL)
+	{
 		return NULL;
+	}
 
 	if (curnode != NULL)
 	{
@@ -128,7 +138,9 @@ pico_LNode * picoLNode_createText(
 
 	pico_LNode * node = malloc(sizeof(pico_LNode));
 	if (node == NULL)
+	{
 		return NULL;
+	}
 
 	node->line = malloc(sizeof(wchar_t) * (maxText + PICO_LNODE_DEFAULT_FREE));
 	if (node->line == NULL)
@@ -145,29 +157,99 @@ pico_LNode * picoLNode_createText(
 
 	node->prevNode = curnode;
 	node->nextNode = nextnode;
+	if (curnode != NULL)
+	{
+		curnode->nextNode  = node;
+	}
+	if (nextnode != NULL)
+	{
+		nextnode->prevNode = node;
+	}
 	return node;
 }
+
 bool picoLNode_realloc(pico_LNode * restrict curnode)
 {
 	if (curnode->freeSpaceLen == PICO_LNODE_DEFAULT_FREE)
+	{
 		return true;
+	}
 	uint32_t totalLen = curnode->lineEndx - curnode->freeSpaceLen;
-	wchar_t * newLine = malloc(sizeof(wchar_t) * (totalLen + PICO_LNODE_DEFAULT_FREE));
-	if (newLine == NULL)
+	void * newmem = realloc(curnode->line, sizeof(wchar_t) * (totalLen + PICO_LNODE_DEFAULT_FREE));
+	if (newmem == NULL)
+	{
 		return false;
-	
-	memcpy(newLine, curnode->line, sizeof(wchar_t) * curnode->curx);
-	memcpy(
-		newLine + PICO_LNODE_DEFAULT_FREE,
-		curnode->line + curnode->curx + curnode->freeSpaceLen,
-		sizeof(wchar_t) * (totalLen - curnode->curx)
-	);
-	free(curnode->line);
-	curnode->line = newLine;
+	}
+
+	curnode->line = newmem;
+
+	if (curnode->curx != totalLen)
+	{
+		memmove(
+			curnode->line + curnode->curx + PICO_LNODE_DEFAULT_FREE,
+			curnode->line + curnode->curx + curnode->freeSpaceLen,
+			sizeof(wchar_t) * (totalLen - curnode->curx - curnode->freeSpaceLen)
+		);
+	}
+
 	curnode->lineEndx = totalLen + PICO_LNODE_DEFAULT_FREE;
 	curnode->freeSpaceLen = PICO_LNODE_DEFAULT_FREE;
 
 	return true;
+}
+
+bool picoLNode_merge(pico_LNode * restrict node)
+{
+	if (node->nextNode != NULL)
+	{
+		return false;
+	}
+	
+	pico_LNode * restrict n = node->nextNode;
+
+	// Allocate more memory for first line
+	void * linemem = realloc(node->line, sizeof(wchar_t) * (node->lineEndx - node->freeSpaceLen + n->lineEndx - n->freeSpaceLen + PICO_LNODE_DEFAULT_FREE));
+	if (linemem == NULL)
+	{
+		return false;
+	}
+
+	node->line = linemem;
+
+	// Move cursor to end, if needed
+	if ((node->curx + node->freeSpaceLen) != node->lineEndx)
+	{
+		memmove(node->line + node->curx, node->line + node->curx + node->freeSpaceLen, sizeof(wchar_t) * (node->lineEndx - node->curx - node->freeSpaceLen));
+		node->curx = node->lineEndx - node->freeSpaceLen;
+	}
+
+	// Move also other line's cursor to end if needed
+	if ((n->curx + n->freeSpaceLen) != n->lineEndx)
+	{
+		memmove(n->line + n->curx, n->line + n->curx + n->freeSpaceLen, sizeof(wchar_t) * (n->lineEndx - n->curx - n->freeSpaceLen));
+		n->curx = n->lineEndx - n->freeSpaceLen;
+	}
+
+
+	node->freeSpaceLen = PICO_LNODE_DEFAULT_FREE;
+	node->lineEndx = node->curx + n->curx + PICO_LNODE_DEFAULT_FREE;
+
+	memcpy(node->line + node->curx + node->freeSpaceLen, n->line, sizeof(wchar_t) * n->curx);
+	node->nextNode = n->nextNode;
+	node->nextNode->prevNode = node;
+
+	picoLNode_destroy(n); 
+
+	return true;
+}
+
+void picoLNode_destroy(pico_LNode * restrict node)
+{
+	if (node->line != NULL)
+	{
+		free(node->line);
+		node->line = NULL;
+	}
 }
 
 bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName)
@@ -224,7 +306,9 @@ void picoFile_clearLines(pico_File * restrict file)
 	file->data.currentNode = NULL;
 	file->data.cury = 0;
 	if (node == NULL)
+	{
 		return;
+	}
 	while (node->nextNode != NULL)
 	{
 		node = node->nextNode;
@@ -355,10 +439,9 @@ bool picoFile_addNormalCh(pico_File * restrict file, wchar_t ch)
 {
 	pico_LNode * node = file->data.currentNode;
 
-	if (node->freeSpaceLen < 1)
+	if (node->freeSpaceLen < 1 && !picoLNode_realloc(node))
 	{
-		if (!picoLNode_realloc(node))
-			return false;
+		return false;
 	}
 
 	node->line[node->curx] = ch;
@@ -371,18 +454,30 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 	switch (ch)
 	{
 	case VK_TAB:
-		for (int i = 0; i < 4; ++i) picoFile_addNormalCh(file, ' ');
+		for (int i = 0; i < 4; ++i)
+		{
+			if (picoFile_addNormalCh(file, ' ') == false)
+			{
+				return false;
+			}
+		}
 		break;
 	case VK_OEM_BACKTAB:
 		// Check if there's 4 spaces before the caret
 		if (picoFile_checkLineAt(file, -4, L"    ", 4))
 		{
-			for (int i = 0; i < 4; ++i) picoFile_deleteForward(file);
+			for (int i = 0; i < 4; ++i)
+			{
+				picoFile_deleteForward(file);
+			}
 		}
 		// If there isn't, check if there's 4 spaces after the caret
 		else if (picoFile_checkLineAt(file, 0, L"    ", 4))
 		{
-			for (int i = 0; i < 4; ++i) picoFile_deleteBackward(file);
+			for (int i = 0; i < 4; ++i)
+			{
+				picoFile_deleteBackward(file);
+			}
 		}
 		break;
 	case VK_RETURN:	// Enter key
@@ -434,6 +529,7 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 	default:
 		return false;
 	}
+
 	return true;
 }
 
@@ -441,7 +537,9 @@ bool picoFile_checkLineAt(const pico_File * restrict file, int32_t maxdelta, con
 {
 	const pico_LNode * restrict cl = file->data.currentNode;
 	if (maxdelta >= 0 && cl->curx == cl->lineEndx)
+	{
 		return false;
+	}
 	if (maxdelta >= 0)
 	{
 		uint32_t startx = cl->curx + cl->freeSpaceLen - 1;
@@ -455,7 +553,9 @@ bool picoFile_checkLineAt(const pico_File * restrict file, int32_t maxdelta, con
 		uint32_t maxcomp = u32Min((uint32_t)maxdelta, maxString);
 		bool ret = wcsncmp(cl->line + startx - maxdelta, string, maxcomp) == 0;
 		if (ret == false)
+		{
 			return false;
+		}
 		if (maxString > maxcomp)
 		{
 			if ((cl->curx + cl->freeSpaceLen) < cl->lineEndx)
@@ -480,6 +580,10 @@ bool picoFile_deleteForward(pico_File * restrict file)
 		++node->freeSpaceLen;
 		return true;
 	}
+	else if (node->nextNode != NULL)
+	{
+		return picoLNode_merge(node);
+	}
 	else
 	{
 		return false;
@@ -494,6 +598,12 @@ bool picoFile_deleteBackward(pico_File * restrict file)
 		++node->freeSpaceLen;
 		return true;
 	}
+	else if (node->prevNode != NULL)
+	{
+		// Add current node data to previous node data
+		file->data.currentNode = node->prevNode;
+		return picoLNode_merge(file->data.currentNode);
+	}
 	else
 	{
 		return false;
@@ -503,11 +613,12 @@ bool picoFile_addNewLine(pico_File * restrict file)
 {
 	pico_LNode * node = picoLNode_create(file->data.currentNode, file->data.currentNode->nextNode);
 	if (node == NULL)
+	{
 		return false;
-	
+	}
+
 	file->data.currentNode->nextNode = node;
 	file->data.currentNode = node;
-	++file->data.cury;
 	return true;
 }
 
@@ -532,10 +643,12 @@ bool picoDS_init(pico_DS * restrict ds)
 	// Get console current size
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 	if (!GetConsoleScreenBufferInfo(ds->conOut, &csbi))
+	{
 		return false;
-	
-	ds->scrbuf.linew = (uint32_t)(csbi.srWindow.Right  - csbi.srWindow.Left + 1);
-	ds->scrbuf.lines = (uint32_t)(csbi.srWindow.Bottom - csbi.srWindow.Top  + 1);
+	}
+
+	ds->scrbuf.w = (uint32_t)(csbi.srWindow.Right  - csbi.srWindow.Left + 1);
+	ds->scrbuf.h = (uint32_t)(csbi.srWindow.Bottom - csbi.srWindow.Top  + 1);
 	// Create screen buffer
 	ds->scrbuf.handle = CreateConsoleScreenBuffer(
 		GENERIC_WRITE,
@@ -545,20 +658,28 @@ bool picoDS_init(pico_DS * restrict ds)
 		NULL
 	);
 	if (ds->scrbuf.handle == INVALID_HANDLE_VALUE)
+	{
 		return false;
-	
-	ds->scrbuf.mem = malloc((size_t)(ds->scrbuf.linew * ds->scrbuf.lines) * sizeof(wchar_t));
+	}
+
+	ds->scrbuf.mem = malloc((size_t)(ds->scrbuf.w * ds->scrbuf.h) * sizeof(wchar_t));
 	if (ds->scrbuf.mem == NULL)
+	{
 		return false;
-	
-	for (uint32_t i = 0, sz = ds->scrbuf.linew * ds->scrbuf.lines; i < sz; ++i)
+	}
+
+	for (uint32_t i = 0, sz = ds->scrbuf.w * ds->scrbuf.h; i < sz; ++i)
 	{
 		ds->scrbuf.mem[i] = L' ';
 	}
-	if (!SetConsoleScreenBufferSize(ds->scrbuf.handle, (COORD){ .X = (SHORT)ds->scrbuf.linew, .Y = (SHORT)ds->scrbuf.lines }))
+	if (!SetConsoleScreenBufferSize(ds->scrbuf.handle, (COORD){ .X = (SHORT)ds->scrbuf.w, .Y = (SHORT)ds->scrbuf.h }))
+	{
 		return false;
+	}
 	if (!SetConsoleActiveScreenBuffer(ds->scrbuf.handle))
+	{
 		return false;
+	}
 
 	return true;
 }
@@ -569,7 +690,7 @@ void picoDS_refresh(pico_DS * restrict ds)
 	WriteConsoleOutputCharacterW(
 		ds->scrbuf.handle,
 		ds->scrbuf.mem,
-		ds->scrbuf.linew * (ds->scrbuf.lines - 1),
+		ds->scrbuf.w * (ds->scrbuf.h - 1),
 		(COORD){ 0, 0 },
 		&dwBytes
 	);
@@ -581,21 +702,21 @@ void picoDS_refreshAll(pico_DS * restrict ds)
 	WriteConsoleOutputCharacterW(
 		ds->scrbuf.handle,
 		ds->scrbuf.mem,
-		ds->scrbuf.linew * ds->scrbuf.lines,
+		ds->scrbuf.w * ds->scrbuf.h,
 		(COORD){ 0, 0 },
 		&dwBytes
 	);
 }
 void picoDS_statusDraw(pico_DS * restrict ds, const wchar_t * message)
 {
-	size_t len = wcslen(message), effLen = (len > ds->scrbuf.linew) ? (size_t)ds->scrbuf.linew : len;
-	wchar_t * restrict lastLine = ds->scrbuf.mem + (ds->scrbuf.lines - 1) * ds->scrbuf.linew;
+	size_t len = wcslen(message), effLen = (len > ds->scrbuf.w) ? (size_t)ds->scrbuf.w : len;
+	wchar_t * restrict lastLine = ds->scrbuf.mem + (ds->scrbuf.h - 1) * ds->scrbuf.w;
 	memcpy(
 		lastLine,
 		message,
 		sizeof(wchar_t) * effLen
 	);
-	for (size_t i = effLen; i < ds->scrbuf.linew; ++i)
+	for (size_t i = effLen; i < ds->scrbuf.w; ++i)
 	{
 		lastLine[i] = L' ';
 	}
@@ -606,9 +727,9 @@ void picoDS_statusRefresh(pico_DS * restrict ds)
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
 		ds->scrbuf.handle,
-		ds->scrbuf.mem + (ds->scrbuf.lines - 1) * ds->scrbuf.linew,
-		ds->scrbuf.linew,
-		(COORD){ .X = 0, .Y = (SHORT)(ds->scrbuf.lines - 1) },
+		ds->scrbuf.mem + (ds->scrbuf.h - 1) * ds->scrbuf.w,
+		ds->scrbuf.w,
+		(COORD){ .X = 0, .Y = (SHORT)(ds->scrbuf.h - 1) },
 		&dwBytes
 	);
 }
@@ -653,8 +774,10 @@ static const char * pico_errCodes[picoE_num_of_elems] = {
 void pico_printErr(enum picoE errCode)
 {
 	if (errCode >= picoE_num_of_elems)
+	{
 		errCode = picoE_unknown;
-	
+	}
+
 	puts(pico_errCodes[errCode]);
 }
 
@@ -680,11 +803,11 @@ bool pico_loop()
 		static int keyCount = 1;
 
 
-		wchar_t key = ir.Event.KeyEvent.uChar.UnicodeChar;
+		wchar_t key      = ir.Event.KeyEvent.uChar.UnicodeChar;
 		wchar_t wVirtKey = ir.Event.KeyEvent.wVirtualKeyCode;
-		bool state = ir.Event.KeyEvent.bKeyDown != 0;
+		bool state       = ir.Event.KeyEvent.bKeyDown != 0;
 
-		if (state == true)
+		if (state)
 		{
 			if (key == prevkey)
 			{
@@ -699,10 +822,12 @@ bool pico_loop()
 
 		if (state)
 		{
-			boolarrPut(keybuffer, key, true);
+			boolPut(keybuffer, key, true);
 			if (wVirtKey == VK_ESCAPE || key == sac_Ctrl_Q)	// Exit on Escape or Ctrl+Q
+			{
 				return false;
-			else if (boolarrGet(keybuffer, sac_Ctrl_S) && !boolarrGet(prevkeybuffer, sac_Ctrl_S))	// Save file
+			}
+			else if (boolGet(keybuffer, sac_Ctrl_S) && !boolGet(prevkeybuffer, sac_Ctrl_S))	// Save file
 			{
 				int saved = picoFile_write(&file);
 				if (saved == -1)
@@ -793,7 +918,7 @@ bool pico_loop()
 		}
 		else
 		{
-			boolarrPut(keybuffer, key, false);
+			boolPut(keybuffer, key, false);
 		}
 		prevkey = key;
 		prevstate = state;
@@ -805,7 +930,47 @@ bool pico_loop()
 }
 void pico_updateScrbuf()
 {
+	if (file.data.cury == NULL)
+	{
+		file.data.cury = file.data.currentNode;
+	}
+	file.data.curx = i32Max(0, (int32_t)file.data.cury->curx - (int32_t)editor.scrbuf.w);
+	uint32_t size = editor.scrbuf.w * editor.scrbuf.h;
+	for (uint32_t i = 0; i < size; ++i)
+	{
+		editor.scrbuf.mem[i] = L' ';
+	}
+	pico_LNode * node = file.data.cury;
+	for (uint32_t i = 0; i < editor.scrbuf.h; ++i)
+	{
+		if (node == NULL)
+		{
+			break;
+		}
 
+		// if line is active line
+		if (node == file.data.currentNode)
+		{
+			// Update cursor position
+			editor.cursorpos.Y = i;
+			editor.cursorpos.X = node->curx - file.data.curx;
+			SetConsoleCursorPosition(editor.scrbuf.handle, editor.cursorpos);
+		}
+		wchar_t * destination = &editor.scrbuf.mem[i * editor.scrbuf.w];
+
+		if (file.data.curx <= node->curx)
+		{
+			memcpy(destination, node->line + file.data.curx, sizeof(wchar_t) * (node->curx - file.data.curx));
+			memcpy(destination + node->curx - file.data.curx, node->line + node->curx + node->freeSpaceLen, sizeof(wchar_t) * (node->lineEndx - node->curx - node->freeSpaceLen));
+		}
+		if ((node->curx + node->freeSpaceLen) != node->lineEndx)
+		{
+			destination += node->curx;
+			uint32_t maxSize = editor.scrbuf.w - node->curx;
+		}
+
+		node = node->nextNode;
+	}
 }
 
 uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16)
@@ -813,10 +978,11 @@ uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16)
 	if (numBytes == 0)
 	{
 		*putf16 = malloc(sizeof(wchar_t));
-		if (*putf16 == NULL)
-			return 0;
-		
-		*putf16[0] = L'\0';
+		if (*putf16 != NULL)
+		{
+			*putf16[0] = L'\0';
+		}
+
 		return 0;
 	}
 	// Query the needed size
@@ -884,7 +1050,9 @@ uint32_t pico_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines)
 	for (uint32_t i = 0; i < chars; ++i)
 	{
 		if (utf16[i] == '\n')
+		{
 			++newlines;
+		}
 	}
 	*lines = malloc(newlines * sizeof(wchar_t *));
 	if (*lines == NULL)

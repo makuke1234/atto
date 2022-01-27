@@ -20,11 +20,13 @@
 
 #define MAX_STATUS 256
 
-bool boolarrGet(uint8_t * arr, const size_t index);
-void boolarrPut(uint8_t * arr, const size_t index, const bool value);
+bool boolGet(uint8_t * arr, const size_t index);
+void boolPut(uint8_t * arr, const size_t index, const bool value);
 
 int32_t i32Min(int32_t a, int32_t b);
+int32_t i32Min(int32_t a, int32_t b);
 uint32_t u32Min(uint32_t a, uint32_t b);
+uint32_t u32Max(uint32_t a, uint32_t b);
 
 
 /*
@@ -53,6 +55,10 @@ pico_LNode * picoLNode_createText(
 );
 bool picoLNode_realloc(pico_LNode * restrict curnode);
 
+bool picoLNode_merge(pico_LNode * restrict node);
+
+void picoLNode_destroy(pico_LNode * restrict node);
+
 typedef struct pico_File
 {
 	const wchar_t * fileName;
@@ -62,7 +68,8 @@ typedef struct pico_File
 	{
 		pico_LNode * firstNode;
 		pico_LNode * currentNode;
-		uint32_t cury, curx;
+		pico_LNode * cury;
+		uint32_t curx;
 	} data;
 } pico_File;
 
@@ -89,8 +96,9 @@ typedef struct pico_DS
 	{
 		HANDLE handle;
 		wchar_t * mem;
-		uint32_t linew, lines;
+		uint32_t w, h;
 	} scrbuf;
+	COORD cursorpos;
 } pico_DS;
 
 bool picoDS_init(pico_DS * restrict ds);
