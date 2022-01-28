@@ -57,6 +57,8 @@ bool picoLNode_realloc(pico_LNode * restrict curnode);
 
 bool picoLNode_merge(pico_LNode * restrict node);
 
+void picoLNode_moveCursor(pico_LNode * restrict node, int32_t delta);
+
 void picoLNode_destroy(pico_LNode * restrict node);
 
 typedef struct pico_File
@@ -68,7 +70,7 @@ typedef struct pico_File
 	{
 		pico_LNode * firstNode;
 		pico_LNode * currentNode;
-		pico_LNode * cury;
+		pico_LNode * pcury;
 		uint32_t curx;
 	} data;
 } pico_File;
@@ -86,6 +88,7 @@ bool picoFile_checkLineAt(const pico_File * restrict file, int32_t maxdelta, con
 bool picoFile_deleteForward(pico_File * restrict file);
 bool picoFile_deleteBackward(pico_File * restrict file);
 bool picoFile_addNewLine(pico_File * restrict file);
+void picoFile_updateCury(pico_File * restrict file, uint32_t height);
 
 void picoFile_destruct(pico_File * restrict file);
 

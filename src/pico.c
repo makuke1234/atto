@@ -106,7 +106,7 @@ pico_LNode * picoLNode_create(pico_LNode * curnode, pico_LNode * nextnode)
 				free(node);
 				return NULL;
 			}
-			memcpy(node->line + PICO_LNODE_DEFAULT_FREE, &curnode->line[contStart], sizeof(wchar_t) * contLen);
+			memcpy(node->line + PICO_LNODE_DEFAULT_FREE, curnode->line + contStart, sizeof(wchar_t) * contLen);
 			curnode->freeSpaceLen += contLen;
 		}
 	}
@@ -150,7 +150,8 @@ pico_LNode * picoLNode_createText(
 		return NULL;
 	}
 
-	node->line = malloc(sizeof(wchar_t) * (maxText + PICO_LNODE_DEFAULT_FREE));
+	node->lineEndx = maxText + PICO_LNODE_DEFAULT_FREE;
+	node->line = malloc(sizeof(wchar_t) * node->lineEndx);
 	if (node->line == NULL)
 	{
 		free(node);
@@ -159,7 +160,6 @@ pico_LNode * picoLNode_createText(
 	
 	memcpy(node->line, lineText, sizeof(wchar_t) * maxText);
 
-	node->lineEndx = maxText + PICO_LNODE_DEFAULT_FREE;
 	node->curx = maxText;
 	node->freeSpaceLen = PICO_LNODE_DEFAULT_FREE;
 
@@ -200,7 +200,7 @@ bool picoLNode_realloc(pico_LNode * restrict curnode)
 		);
 	}
 
-	curnode->lineEndx = totalLen + PICO_LNODE_DEFAULT_FREE;
+	curnode->lineEndx     = totalLen + PICO_LNODE_DEFAULT_FREE;
 	curnode->freeSpaceLen = PICO_LNODE_DEFAULT_FREE;
 
 	return true;
@@ -224,38 +224,39 @@ bool picoLNode_merge(pico_LNode * restrict node)
 	node->line = linemem;
 
 	// Move cursor to end, if needed
-	if ((node->curx + node->freeSpaceLen) < node->lineEndx)
-	{
-		memmove(
-			node->line + node->curx,
-			node->line + node->curx + node->freeSpaceLen,
-			sizeof(wchar_t) * (node->lineEndx - node->curx - node->freeSpaceLen)
-		);
-		node->curx = node->lineEndx - node->freeSpaceLen;
-	}
-
-	// Move also other line's cursor to end if needed
-	if ((n->curx + n->freeSpaceLen) < n->lineEndx)
-	{
-		memmove(
-			n->line + n->curx,
-			n->line + n->curx + n->freeSpaceLen,
-			sizeof(wchar_t) * (n->lineEndx - n->curx - n->freeSpaceLen)
-		);
-		n->curx = n->lineEndx - n->freeSpaceLen;
-	}
-
+	picoLNode_moveCursor(node, (int32_t)node->lineEndx);
+	picoLNode_moveCursor(n, (int32_t)n->lineEndx);
 
 	node->freeSpaceLen = PICO_LNODE_DEFAULT_FREE;
 	node->lineEndx = node->curx + n->curx + PICO_LNODE_DEFAULT_FREE;
 
 	memcpy(node->line + node->curx + node->freeSpaceLen, n->line, sizeof(wchar_t) * n->curx);
+	n->nextNode->prevNode = node;
 	node->nextNode = n->nextNode;
-	node->nextNode->prevNode = node;
 
 	picoLNode_destroy(n); 
 
 	return true;
+}
+
+void picoLNode_moveCursor(pico_LNode * restrict node, int32_t delta)
+{
+	if (delta < 0)
+	{
+		for (; delta < 0 && node->curx > 0; ++delta)
+		{
+			node->line[node->curx + node->freeSpaceLen - 1] = node->line[node->curx - 1];
+			--node->curx;
+		}
+	}
+	else
+	{
+		for (uint32_t total = node->lineEndx - node->freeSpaceLen; delta > 0 && node->curx < total; --delta)
+		{
+			node->line[node->curx] = node->line[node->curx + node->freeSpaceLen];
+			++node->curx;
+		}
+	}
 }
 
 void picoLNode_destroy(pico_LNode * restrict node)
@@ -265,6 +266,7 @@ void picoLNode_destroy(pico_LNode * restrict node)
 		free(node->line);
 		node->line = NULL;
 	}
+	free(node);
 }
 
 bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName)
@@ -319,7 +321,7 @@ void picoFile_clearLines(pico_File * restrict file)
 	pico_LNode * node = file->data.firstNode;
 	file->data.firstNode = NULL;
 	file->data.currentNode = NULL;
-	file->data.cury = 0;
+	file->data.pcury = NULL;
 	if (node == NULL)
 	{
 		return;
@@ -388,7 +390,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 		return L"Line reading error!";
 	}
 	writeProfiler("picoFile_read", "Total of %u lines", numLines);
-	for (int i = 0; i < numLines; ++i)
+	for (uint32_t i = 0; i < numLines; ++i)
 	{
 		writeProfiler("picoFile_read", "Line %d: \"%S\"", i, lines[i]);
 	}
@@ -424,9 +426,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 			free(utf16);
 			return L"Line creation error!";
 		}
-		file->data.currentNode->nextNode = node;
 		file->data.currentNode = node;
-		++file->data.cury;
 	}
 
 	// Free lines arr
@@ -508,9 +508,7 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 	case VK_LEFT:	// Left arrow
 		if (file->data.currentNode->curx > 0)
 		{
-			pico_LNode * node = file->data.currentNode;
-			node->line[node->curx + node->freeSpaceLen - 1] = node->line[node->curx - 1];
-			--node->curx;
+			picoLNode_moveCursor(file->data.currentNode, -1);
 		}
 		else if (file->data.currentNode->prevNode != NULL)
 		{
@@ -520,9 +518,7 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 	case VK_RIGHT:	// Right arrow
 		if ((file->data.currentNode->curx + file->data.currentNode->freeSpaceLen) < file->data.currentNode->lineEndx)
 		{
-			pico_LNode * node = file->data.currentNode;
-			node->line[node->curx] = node->line[node->curx + node->freeSpaceLen];
-			++node->curx;
+			picoLNode_moveCursor(file->data.currentNode, 1);
 		}
 		else if (file->data.currentNode->nextNode != NULL)
 		{
@@ -548,7 +544,6 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 	return true;
 }
 
-// TODO: remake
 bool picoFile_checkLineAt(const pico_File * restrict file, int32_t maxdelta, const wchar_t * string, uint32_t maxString)
 {
 	const pico_LNode * restrict node = file->data.currentNode;
@@ -562,11 +557,11 @@ bool picoFile_checkLineAt(const pico_File * restrict file, int32_t maxdelta, con
 	{
 		return false;
 	}
-	for (; idx < node->lineEndx && i < m && *string != '\0';)
+	for (; idx < (int32_t)node->lineEndx && i < m && *string != '\0';)
 	{
-		if (idx == node->curx)
+		if (idx == (int32_t)node->curx)
 		{
-			idx += node->freeSpaceLen;
+			idx += (int32_t)node->freeSpaceLen;
 			continue;
 		}
 		
@@ -634,6 +629,45 @@ bool picoFile_addNewLine(pico_File * restrict file)
 	file->data.currentNode->nextNode = node;
 	file->data.currentNode = node;
 	return true;
+}
+
+void picoFile_updateCury(pico_File * restrict file, uint32_t height)
+{
+	if (file->data.pcury == NULL)
+	{
+		pico_LNode * node = file->data.currentNode;
+		for (uint32_t i = 0; i < height && node->prevNode != NULL; ++i)
+		{
+			node = node->prevNode;
+		}
+		file->data.pcury = node;
+	}
+	else
+	{
+		pico_LNode * node = file->data.currentNode;
+		for (uint32_t i = 0; i < height && node != NULL; ++i)
+		{
+			if (node == file->data.pcury)
+			{
+				return;
+			}
+			node = node->prevNode;
+		}
+
+		node = file->data.currentNode->nextNode;
+		for (; node != NULL;)
+		{
+			if (node == file->data.pcury)
+			{
+				file->data.pcury = file->data.currentNode;
+				return;
+			}
+			node = node->nextNode;
+		}
+
+		file->data.pcury = NULL;
+		picoFile_updateCury(file, height);
+	}
 }
 
 
@@ -812,7 +846,7 @@ bool pico_loop()
 	{
 		static uint8_t keybuffer[32] = { 0 }, prevkeybuffer[32] = { 0 };
 		static wchar_t prevkey;
-		static bool prevstate;
+		//static bool prevstate;
 
 		static int keyCount = 1;
 
@@ -935,7 +969,7 @@ bool pico_loop()
 			boolPut(keybuffer, key, false);
 		}
 		prevkey = key;
-		prevstate = state;
+		//prevstate = state;
 		memcpy(prevkeybuffer, keybuffer, 32 * sizeof(uint8_t));
 		FlushConsoleInputBuffer(editor.conIn);
 	}
@@ -944,18 +978,15 @@ bool pico_loop()
 }
 void pico_updateScrbuf()
 {
-	if (file.data.cury == NULL)
-	{
-		file.data.cury = file.data.currentNode;
-	}
-	file.data.curx = i32Max(0, (int32_t)file.data.cury->curx - (int32_t)editor.scrbuf.w);
+	picoFile_updateCury(&file, editor.scrbuf.h - 2);
+	file.data.curx = (uint32_t)i32Max(0, (int32_t)file.data.currentNode->curx - (int32_t)editor.scrbuf.w);
 	uint32_t size = editor.scrbuf.w * editor.scrbuf.h;
 	for (uint32_t i = 0; i < size; ++i)
 	{
 		editor.scrbuf.mem[i] = L' ';
 	}
-	pico_LNode * node = file.data.cury;
-	for (uint32_t i = 0; i < editor.scrbuf.h; ++i)
+	pico_LNode * node = file.data.pcury;
+	for (uint32_t i = 0; i < editor.scrbuf.h - 1; ++i)
 	{
 		if (node == NULL)
 		{
@@ -966,21 +997,38 @@ void pico_updateScrbuf()
 		if (node == file.data.currentNode)
 		{
 			// Update cursor position
-			editor.cursorpos.Y = i;
-			editor.cursorpos.X = node->curx - file.data.curx;
+			editor.cursorpos.Y = (int16_t)i;
+			editor.cursorpos.X = (int16_t)(node->curx - file.data.curx);
 			SetConsoleCursorPosition(editor.scrbuf.handle, editor.cursorpos);
 		}
 		wchar_t * destination = &editor.scrbuf.mem[i * editor.scrbuf.w];
 
-		if (file.data.curx <= node->curx)
+		// Drawing
+
+		// Advance idx by file.data.curx
+		uint32_t idx = 0;
+
+		for (uint32_t i = file.data.curx; i > 0 && idx < node->lineEndx;)
 		{
-			memcpy(destination, node->line + file.data.curx, sizeof(wchar_t) * (node->curx - file.data.curx));
-			memcpy(destination + node->curx - file.data.curx, node->line + node->curx + node->freeSpaceLen, sizeof(wchar_t) * (node->lineEndx - node->curx - node->freeSpaceLen));
+			if (idx == node->curx)
+			{
+				idx += node->freeSpaceLen;
+				continue;
+			}
+			++idx;
+			--i;
 		}
-		if ((node->curx + node->freeSpaceLen) != node->lineEndx)
+
+		for (uint32_t i = 0; idx < node->lineEndx && i < editor.scrbuf.w;)
 		{
-			destination += node->curx;
-			uint32_t maxSize = editor.scrbuf.w - node->curx;
+			if (idx == node->curx)
+			{
+				idx += node->freeSpaceLen;
+				continue;
+			}
+			destination[i] = node->line[idx];
+			++idx;
+			++i;
 		}
 
 		node = node->nextNode;
