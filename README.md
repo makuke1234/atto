@@ -41,7 +41,7 @@ Currently a fixed number of features is supported:
 ## Last key shown on status bar with respective repeat count
 ![Key frequency](./images/keyFreq.PNG)
 
-## Saving the was successful, file size is now 48 bytes
+## Saving was successful, file size is now 48 bytes
 ![!Saving success](./images/savingSuc.PNG)
 
 
