@@ -14,6 +14,7 @@ The x86 (32-bit) binary can be obtained [here](https://github.com/makuke1234/pic
 
 Currently a fixed number of features is supported:
 - [x] file must be given as a command-line argument, 'raw editing'/'saving later to a file' is impossible for a reason
+- [x] all saved files use LF line-ending format
 - [x] pico editor utilizes the whole command prompt window, window is as big as your console currently is
 - [x] the last line of the window is dedicated to status, for example showing success or failure when an attempt to save the file has been made
 - [x] the following keyboard shortcuts:
