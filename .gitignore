@@ -9,3 +9,5 @@
 profiler.txt
 .bash_history
 test*.txt
+/.ssh
+.lesshst
