@@ -21,6 +21,7 @@ Currently a fixed number of features is supported:
 	| ------ | ------ |
 	| ESC    | Closes the editor |
 	| Ctrl+S | Tries to save the current open file |
+	| Ctrl+R | Tries to reload contents of current file |
 - [x] 2 ways to start the program:
 	| Syntax        | Action |
 	| ------------- | ------ |

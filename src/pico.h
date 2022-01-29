@@ -76,8 +76,17 @@ typedef struct pico_File
 } pico_File;
 
 bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName);
+void picoFile_close(pico_File * restrict file);
 void picoFile_clearLines(pico_File * restrict file);
 const wchar_t * picoFile_read(pico_File * restrict file);
+
+enum picoFile_writeRes
+{
+	writeRes_nothingNew = -1,
+	writeRes_openError  = -2,
+	writeRes_writeError = -3
+};
+
 int picoFile_write(pico_File * restrict file);
 void picoFile_setConTitle(pico_File * restrict file);
 

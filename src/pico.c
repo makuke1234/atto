@@ -19,11 +19,14 @@ int wmain(int argc, const wchar_t * argv[])
 		pico_printHelp(argv[0]);
 		return 1;
 	}
+
 	if (picoFile_open(&file, fileName) == false)
 	{
 		pico_printErr(picoE_file);
 		return 2;
 	}
+	picoFile_close(&file);
+
 	// Set console title
 	picoFile_setConTitle(&file);
 
@@ -241,7 +244,7 @@ bool picoLNode_merge(pico_LNode * restrict node, pico_LNode ** restrict ppcury)
 	{
 		node->nextNode->prevNode = node;
 	}
-	
+
 	picoLNode_destroy(n); 
 
 	return true;
@@ -279,6 +282,11 @@ void picoLNode_destroy(pico_LNode * restrict node)
 
 bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName)
 {
+	if (fileName == NULL)
+	{
+		fileName = file->fileName;
+	}
+
 	// try to open file
 	file->hFile = CreateFileW(
 		fileName,
@@ -324,6 +332,14 @@ bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName)
 	file->fileName = fileName;
 	return true;
 }
+void picoFile_close(pico_File * restrict file)
+{
+	if (file->hFile != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(file->hFile);
+		file->hFile = INVALID_HANDLE_VALUE;
+	}
+}
 void picoFile_clearLines(pico_File * restrict file)
 {
 	pico_LNode * node = file->data.firstNode;
@@ -334,20 +350,25 @@ void picoFile_clearLines(pico_File * restrict file)
 	{
 		return;
 	}
-	while (node->nextNode != NULL)
+	while (node != NULL)
 	{
-		node = node->nextNode;
-		picoLNode_destroy(node->nextNode);
+		pico_LNode * next = node->nextNode;
+		picoLNode_destroy(node);
+		node = next;
 	}
-	free(node);
 }
 const wchar_t * picoFile_read(pico_File * restrict file)
 {
-	// Read file contents
-	if (file->hFile == INVALID_HANDLE_VALUE)
+	if (picoFile_open(file, NULL) == false)
 	{
-		return L"File handle error!";
+		return L"File opening error!\n";
 	}
+
+	// Clear lines
+
+	picoFile_clearLines(file);
+
+	// Read file contents
 
 	// Get file size
 	DWORD fileSize = GetFileSize(file->hFile, NULL);
@@ -369,6 +390,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 	)
 	{
 		free(bytes);
+		picoFile_close(file);
 		return L"File read error!";
 	}
 	bytes[fileSize] = '\0';
@@ -382,6 +404,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 	if (utf16 == NULL)
 	{
 		free(bytes);
+		picoFile_close(file);
 		return L"Unicode conversion error!";
 	}
 	writeProfiler("picoFile_read", "Converted %u bytes of character to %u UTF-16 characters.", fileSize, chars);
@@ -395,6 +418,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 	if (lines == NULL)
 	{
 		free(utf16);
+		picoFile_close(file);
 		return L"Line reading error!";
 	}
 	writeProfiler("picoFile_read", "Total of %u lines", numLines);
@@ -411,6 +435,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 		{
 			free(lines);
 			free(utf16);
+			picoFile_close(file);
 			return L"Line creation error!";
 		}
 	}
@@ -421,6 +446,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 		{
 			free(lines);
 			free(utf16);
+			picoFile_close(file);
 			return L"Line creation error!";
 		}
 	}
@@ -432,6 +458,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 		{
 			free(lines);
 			free(utf16);
+			picoFile_close(file);
 			return L"Line creation error!";
 		}
 		file->data.currentNode = node;
@@ -442,11 +469,27 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 	// Free UTF-16 converted string
 	free(utf16);
 
+	picoFile_close(file);
+
 	return NULL;
 }
 int picoFile_write(pico_File * restrict file)
 {
-	return -1;
+	if (picoFile_open(file, NULL) == false)
+	{
+		return writeRes_openError;
+	}
+
+	if (file->canWrite == false)
+	{
+		picoFile_close(file);
+		return writeRes_writeError;
+	}
+
+
+	picoFile_close(file);
+
+	return writeRes_nothingNew;
 }
 void picoFile_setConTitle(pico_File * restrict file)
 {
@@ -842,6 +885,7 @@ bool pico_loop()
 	enum SpecialAsciiCodes
 	{
 		sac_Ctrl_Q = 17,
+		sac_Ctrl_R = 18,
 		sac_Ctrl_S = 19,
 
 		sac_last_code = 31
@@ -883,18 +927,39 @@ bool pico_loop()
 			{
 				return false;
 			}
+			else if (boolGet(keybuffer, sac_Ctrl_R) && !boolGet(prevkeybuffer, sac_Ctrl_R))	// Reload file
+			{
+				const wchar_t * res;
+				if ((res = picoFile_read(&file)) != NULL)
+				{
+					picoDS_statusDraw(&editor, res);
+				}
+				else
+				{
+					picoDS_statusDraw(&editor, L"File reloaded successfully!");
+				}
+				picoDS_refresh(&editor);
+			}
 			else if (boolGet(keybuffer, sac_Ctrl_S) && !boolGet(prevkeybuffer, sac_Ctrl_S))	// Save file
 			{
 				int saved = picoFile_write(&file);
-				if (saved == -1)
+				switch (saved)
 				{
+				case writeRes_nothingNew:
 					picoDS_statusDraw(&editor, L"Nothing new to save");
-				}
-				else
+					break;
+				case writeRes_openError:
+					picoDS_statusDraw(&editor, L"File open error!");
+					break;
+				case writeRes_writeError:
+					picoDS_statusDraw(&editor, L"File is write-protected!");
+					break;
+				default:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"Wrote %d bytes.", saved);
 					picoDS_statusDraw(&editor, tempstr);
+				}
 				}
 			}
 			// Normal keys
