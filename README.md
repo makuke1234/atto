@@ -42,7 +42,7 @@ Currently a fixed number of features is supported:
 ![Key frequency](./images/keyFreq.PNG)
 
 ## Saving the was successful, file size is now 48 bytes
-[!Saving success](./images/savingSuc.PNG)
+![!Saving success](./images/savingSuc.PNG)
 
 
 # Changelog
