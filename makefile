@@ -3,7 +3,7 @@ CDEFFLAGS=-std=c99 -Wall -Wextra -Wpedantic -Wconversion -Wunused-variable -muni
 CFLAGS=-O3 -Wl,--strip-all,--build-id=none -fno-ident
 CFLAGSD=-g -O0
 
-TARGET=pico
+TARGET=atto
 OBJ=obj
 OBJD=objd
 SRC=src

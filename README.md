@@ -1,13 +1,14 @@
-# pico
+# atto
+
 ![Release version](https://img.shields.io/badge/alpha-v0.1.0-red.svg)
 
 Yet another text editor ought to be as simple as possible (following the KISS principle). It is purely written in C and
 is designed to be used solely on Microsoft Windows (relies on Win32 API). MinGW-32 GCC has been used as the compiler.
 
 
-# Obtaining binaries
+# Obtaining
 
-The x86 (32-bit) binary can be obtained [here](https://github.com/makuke1234/pico/raw/main/pico.exe).
+The x86 (32-bit) binary can be obtained [here](https://github.com/makuke1234/atto/raw/main/atto.exe).
 
 
 # Features
