@@ -4,8 +4,8 @@
 [![Total downloads](https://img.shields.io/github/downloads/makuke1234/atto/total)](https://github.com/makuke1234/atto/releases)
 ![C version](https://img.shields.io/badge/version-C99-blue.svg)
 
-Yet another text editor ought to be as simple as possible (following the KISS principle). It is purely written in C and
-is designed to be used solely on Microsoft Windows (relies on Win32 API). MinGW-32 GCC has been used as the compiler.
+Yet another text editor ought to be as simple/small as possible (following the KISS principle). It is purely written in C and
+it's designed to be used solely on Microsoft Windows (relies on Win32 API). MinGW-32 GCC has been used as the compiler.
 
 
 # Obtaining
