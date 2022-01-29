@@ -47,6 +47,9 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
+* 1.2
+	* Rename everything finally from "pico" to "atto". "pico" was chosen initially,
+	later swapped it out for "atto" ("pico" was already taken).
 * 1.1
 	* Fix arrow characters in status messages
 * 1.0
