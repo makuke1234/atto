@@ -27,8 +27,8 @@ Currently a fixed number of features is supported:
 - [x] 2 ways to start the program:
 	| Syntax        | Action |
 	| ------------- | ------ |
-	| pico          | Shows help |
-	| pico \[file\] | Starts editor with the specified file,<br>file does not have to exist prior<br>(where \[file\] is the file's name) |
+	| atto          | Shows help |
+	| atto \[file\] | Starts editor with the specified file,<br>file does not have to exist prior<br>(where \[file\] is the file's name) |
 
 
 # License
