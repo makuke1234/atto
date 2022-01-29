@@ -33,6 +33,18 @@ Currently a fixed number of features is supported:
 	| atto \[file\] | Starts editor with the specified file,<br>file does not have to exist prior<br>(where \[file\] is the file's name) |
 
 
+# Screenshots
+
+## Demonstrating unicode support, file test5.txt is open
+![Unicode Support](./images/unicodeSupport.PNG)
+
+## Last key shown on status bar with respective repeat count
+![Key frequency](./images/keyFreq.PNG)
+
+## Saving the was successful, file size is 48 bytes
+[!Saving success](./images/savingSuc.PNG)
+
+
 # Changelog
 
 * 1.1
