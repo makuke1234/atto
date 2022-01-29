@@ -1,6 +1,6 @@
 # atto
 
-[![Release version](https://img.shields.io/github/v/release/makuke1234/atto?display_name=release&include_prereleases)](https://github.com/makuke1234/jsonlite/releases/latest)
+[![Release version](https://img.shields.io/github/v/release/makuke1234/atto?display_name=release&include_prereleases)](https://github.com/makuke1234/atto/releases/latest)
 [![Total downloads](https://img.shields.io/github/downloads/makuke1234/atto/total)](https://github.com/makuke1234/atto/releases)
 ![C version](https://img.shields.io/badge/version-C99-blue.svg)
 
