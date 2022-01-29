@@ -9,3 +9,4 @@
 *.exe
 *.graphml
 profiler.txt
+.bash_history

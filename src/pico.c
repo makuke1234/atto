@@ -5,7 +5,7 @@
 
 #include "profiling.h"
 
-pico_File file = { 0 };
+pico_File file = { .hFile = INVALID_HANDLE_VALUE };
 pico_DS editor = { 0 };
 
 int wmain(int argc, const wchar_t * argv[])
@@ -20,7 +20,7 @@ int wmain(int argc, const wchar_t * argv[])
 		return 1;
 	}
 
-	if (picoFile_open(&file, fileName) == false)
+	if (picoFile_open(&file, fileName, false) == false)
 	{
 		pico_printErr(picoE_file);
 		return 2;
@@ -179,6 +179,53 @@ pico_LNode * picoLNode_createText(
 	return node;
 }
 
+bool picoLNode_getText(const pico_LNode * node, wchar_t ** text, uint32_t * tarrsz)
+{
+	if (text == NULL)
+	{
+		return false;
+	}
+	uint32_t totalLen = node->lineEndx - node->freeSpaceLen + 1;
+
+	if (tarrsz != NULL && *tarrsz < totalLen)
+	{
+		wchar_t * mem = realloc(*text, sizeof(wchar_t) * totalLen);
+		if (mem == NULL)
+		{
+			return false;
+		}
+		*text   = mem;
+		*tarrsz = totalLen;
+	}
+	else if (tarrsz == NULL)
+	{
+		*text = malloc(sizeof(wchar_t) * totalLen);
+		if (*text == NULL)
+		{
+			return false;
+		}
+	}
+
+	wchar_t * t = *text;
+	for (uint32_t i = 0; i < node->lineEndx;)
+	{
+		if (i == node->curx)
+		{
+			i += node->freeSpaceLen;
+			continue;
+		}
+
+		*t = node->line[i];
+		++t;
+
+		++i;
+	}
+
+	*t = L'\0';
+
+	return true;
+}
+
 bool picoLNode_realloc(pico_LNode * restrict curnode)
 {
 	if (curnode->freeSpaceLen == PICO_LNODE_DEFAULT_FREE)
@@ -280,7 +327,7 @@ void picoLNode_destroy(pico_LNode * restrict node)
 	free(node);
 }
 
-bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName)
+bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName, bool writemode)
 {
 	if (fileName == NULL)
 	{
@@ -290,47 +337,24 @@ bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName)
 	// try to open file
 	file->hFile = CreateFileW(
 		fileName,
-		GENERIC_READ | GENERIC_WRITE,
+		writemode ? GENERIC_WRITE : GENERIC_READ,
 		FILE_SHARE_READ,
 		NULL,
-		OPEN_ALWAYS,
+		writemode ? CREATE_ALWAYS : OPEN_ALWAYS,
 		FILE_ATTRIBUTE_NORMAL,
 		NULL
 	);
 	if (file->hFile == INVALID_HANDLE_VALUE)
 	{
-		if (GetLastError() == ERROR_SHARING_VIOLATION)
-		{
-			file->hFile = CreateFileW(
-				fileName,
-				GENERIC_READ,
-				FILE_SHARE_READ,
-				NULL,
-				OPEN_ALWAYS,
-				FILE_ATTRIBUTE_NORMAL,
-				NULL
-			);
-			if (file->hFile == INVALID_HANDLE_VALUE)
-			{
-				file->canWrite = false;
-			}
-			else
-			{
-				return false;
-			}
-		}
-		else
-		{
-			return false;
-		}
+		file->canWrite = false;
+		return false;
 	}
 	else
 	{
-		file->canWrite = true;
+		file->canWrite = writemode;
+		file->fileName = fileName;
+		return true;
 	}
-
-	file->fileName = fileName;
-	return true;
 }
 void picoFile_close(pico_File * restrict file)
 {
@@ -359,7 +383,7 @@ void picoFile_clearLines(pico_File * restrict file)
 }
 const wchar_t * picoFile_read(pico_File * restrict file)
 {
-	if (picoFile_open(file, NULL) == false)
+	if (picoFile_open(file, NULL, false) == false)
 	{
 		return L"File opening error!\n";
 	}
@@ -380,37 +404,36 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 	{
 		return L"Memory error!";
 	}
-	if (!ReadFile(
-			file->hFile,
-			bytes,
-			fileSize,
-			NULL,
-			NULL
-		)
-	)
+	BOOL readFileRes = ReadFile(
+		file->hFile,
+		bytes,
+		fileSize,
+		NULL,
+		NULL
+	);
+	picoFile_close(file);
+
+	if (!readFileRes)
 	{
 		free(bytes);
-		picoFile_close(file);
 		return L"File read error!";
 	}
 	bytes[fileSize] = '\0';
 	++fileSize;
 	// Move file pointer back to beginning
-	SetFilePointer(file->hFile, 0, NULL, FILE_BEGIN);
 
 	// Convert to UTF-16
 	wchar_t * utf16;
-	uint32_t chars = pico_convToUnicode(bytes, (int)fileSize, &utf16);
+	uint32_t chars = pico_convToUnicode(bytes, (int)fileSize, &utf16, NULL);
+	free(bytes);
+
 	if (utf16 == NULL)
 	{
-		free(bytes);
-		picoFile_close(file);
 		return L"Unicode conversion error!";
 	}
 	writeProfiler("picoFile_read", "Converted %u bytes of character to %u UTF-16 characters.", fileSize, chars);
 	writeProfiler("picoFile_read", "File UTF-16 contents \"%S\"", utf16);
 	// Free loaded file memory
-	free(bytes);
 
 	// Save lines to structure
 	wchar_t ** lines;
@@ -418,7 +441,6 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 	if (lines == NULL)
 	{
 		free(utf16);
-		picoFile_close(file);
 		return L"Line reading error!";
 	}
 	writeProfiler("picoFile_read", "Total of %u lines", numLines);
@@ -435,7 +457,6 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 		{
 			free(lines);
 			free(utf16);
-			picoFile_close(file);
 			return L"Line creation error!";
 		}
 	}
@@ -446,7 +467,6 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 		{
 			free(lines);
 			free(utf16);
-			picoFile_close(file);
 			return L"Line creation error!";
 		}
 	}
@@ -458,7 +478,6 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 		{
 			free(lines);
 			free(utf16);
-			picoFile_close(file);
 			return L"Line creation error!";
 		}
 		file->data.currentNode = node;
@@ -469,13 +488,11 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 	// Free UTF-16 converted string
 	free(utf16);
 
-	picoFile_close(file);
-
 	return NULL;
 }
 int picoFile_write(pico_File * restrict file)
 {
-	if (picoFile_open(file, NULL) == false)
+	if (picoFile_open(file, NULL, true) == false)
 	{
 		return writeRes_openError;
 	}
@@ -486,10 +503,129 @@ int picoFile_write(pico_File * restrict file)
 		return writeRes_writeError;
 	}
 
+	writeProfiler("picoFile_write", "Opened file for writing");
 
+	// Save to file here
+
+	wchar_t * lines = NULL, * line = NULL;
+	uint32_t linesCap = 0, linesLen = 0, lineCap = 0;
+
+	pico_LNode * node = file->data.firstNode;
+
+	while (node != NULL)
+	{
+		if (picoLNode_getText(node, &line, &lineCap) == false)
+		{
+			writeProfiler("picoFile_write", "Failed to fetch line!");
+			if (line != NULL)
+			{
+				free(line);
+			}
+			if (lines != NULL)
+			{
+				free(lines);
+			}
+			return writeRes_memError;
+		}
+
+		uint32_t lineLen = (uint32_t)wcsnlen(line, lineCap);
+
+		writeProfiler("picoFile_write", "Got line with size of %u characters. Line contents: \"%S\"", lineLen, line);
+
+		bool addnewline = node->nextNode != NULL;
+
+		uint32_t newLinesLen = linesLen + lineLen + addnewline;
+
+		// Add line to lines, concatenate \n character, if necessary
+
+		if (newLinesLen > linesCap)
+		{
+			// Resize lines array
+			uint32_t newCap = (newLinesLen + 1) * 2;
+
+			void * mem = realloc(lines, sizeof(wchar_t) * newCap);
+			if (mem == NULL)
+			{
+				if (line != NULL)
+				{
+					free(line);
+				}
+				if (lines != NULL)
+				{
+					free(lines);
+				}
+				return writeRes_memError;
+			}
+
+			lines    = mem;
+			linesCap = newCap;
+
+			writeProfiler("picoFile_write", "Resized line string. New cap, length is %u, %u bytes.", linesCap, linesLen);
+		}
+
+		// Copy line
+		memcpy(lines + linesLen, line, sizeof(wchar_t) * lineLen);
+		linesLen = newLinesLen;
+
+		if (addnewline)
+		{
+			lines[linesLen - 1] = L'\n';
+		}
+		lines[linesLen] = L'\0';
+
+		node = node->nextNode;
+	}
+
+	free(line);
+
+	writeProfiler("picoFile_write", "All file contents (%u): \"%S\"", linesLen, lines);
+
+	// Try to convert lines string to UTF-8
+
+	char * utf8 = NULL;
+	uint32_t utf8sz = 0;
+	pico_convFromUnicode(lines, (int)linesLen, &utf8, &utf8sz);
+
+	// Free UTF-16 lines string
+	free(lines);
+
+	// Error-check for conversion
+	
+	if (utf8 == NULL)
+	{
+		picoFile_close(file);
+		return writeRes_memError;
+	}
+
+	writeProfiler("picoFile_write", "Converted UTF-16 string to UTF-8 string");
+	writeProfiler("picoFile_write", "UTF-8 contents: \"%s\"", utf8);
+
+	// Try to write UTF-8 lines string to file
+	DWORD dwWritten;
+	BOOL res = WriteFile(
+		file->hFile,
+		utf8,
+		utf8sz,
+		&dwWritten,
+		NULL
+	);
+
+	// Close file
 	picoFile_close(file);
 
-	return writeRes_nothingNew;
+	// Free utf8 string
+	free(utf8);
+
+	// Do error checking
+	if (!res)
+	{
+		writeProfiler("picoFile_write", "Error writing to file");
+		return writeRes_writeError;
+	}
+	else
+	{
+		return (int)dwWritten;
+	}
 }
 void picoFile_setConTitle(pico_File * restrict file)
 {
@@ -954,6 +1090,9 @@ bool pico_loop()
 				case writeRes_writeError:
 					picoDS_statusDraw(&editor, L"File is write-protected!");
 					break;
+				case writeRes_memError:
+					picoDS_statusDraw(&editor, L"Memory allocation error!");
+					break;
 				default:
 				{
 					wchar_t tempstr[MAX_STATUS];
@@ -1108,7 +1247,7 @@ void pico_updateScrbuf()
 	}
 }
 
-uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16)
+uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, uint32_t * sz)
 {
 	if (numBytes == 0)
 	{
@@ -1121,7 +1260,7 @@ uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16)
 		return 0;
 	}
 	// Query the needed size
-	int size = MultiByteToWideChar(
+	uint32_t size = (uint32_t)MultiByteToWideChar(
 		CP_UTF8,
 		MB_PRECOMPOSED,
 		utf8,
@@ -1130,11 +1269,25 @@ uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16)
 		0
 	);
 	// Try to allocate memory
-	*putf16 = malloc((uint32_t)size * sizeof(wchar_t));
-	if (*putf16 == NULL)
+	if (sz != NULL && *sz < size)
 	{
-		return 0;
+		void * mem = realloc(*putf16, size * sizeof(wchar_t));
+		if (mem == NULL)
+		{
+			return 0;
+		}
+		*putf16 = mem;
+		*sz     = size;
 	}
+	else if (*putf16 == NULL || sz == NULL)
+	{
+		*putf16 = malloc(size * sizeof(wchar_t));
+		if (*putf16 == NULL)
+		{
+			return 0;
+		}
+	}
+
 	// Make conversion
 	MultiByteToWideChar(
 		CP_UTF8,
@@ -1142,41 +1295,55 @@ uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16)
 		utf8,
 		numBytes,
 		*putf16,
-		size
+		(int)size
 	);
-	return (uint32_t)size;
+	return size;
 }
-uint32_t pico_convFromUnicode(const wchar_t * utf16, char ** putf8)
+uint32_t pico_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8, uint32_t * sz)
 {
 	// Quory the needed size
-	int size = WideCharToMultiByte(
+	uint32_t size = (uint32_t)WideCharToMultiByte(
 		CP_UTF8,
-		MB_PRECOMPOSED,
+		0,
 		utf16,
-		-1,
+		numChars,
 		NULL,
 		0,
 		NULL,
 		NULL
 	);
 	// Alloc mem
-	*putf8 = malloc((uint32_t)size * sizeof(char));
-	if (*putf8 == NULL)
+	if (sz != NULL && *sz < size)
 	{
-		return 0;
+		void * mem = realloc(*putf8, size * sizeof(char));
+		if (mem == NULL)
+		{
+			return 0;
+		}
+		*putf8 = mem;
+		*sz    = size;
 	}
+	else if (*putf8 == NULL || sz == NULL)
+	{
+		*putf8 = malloc(size * sizeof(char));
+		if (*putf8 == NULL)
+		{
+			return 0;
+		}
+	}
+
 	// Convert
 	WideCharToMultiByte(
 		CP_UTF8,
-		MB_PRECOMPOSED,
+		0,
 		utf16,
-		-1,
+		numChars,
 		*putf8,
-		size,
+		(int)size,
 		NULL,
 		NULL
 	);
-	return (uint32_t)size;
+	return size;
 }
 uint32_t pico_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines)
 {
@@ -1218,3 +1385,4 @@ uint32_t pico_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines)
 
 	return newlines;
 }
+

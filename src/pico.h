@@ -53,6 +53,9 @@ pico_LNode * picoLNode_createText(
 	const wchar_t * lineText,
 	int32_t maxText
 );
+
+bool picoLNode_getText(const pico_LNode * node, wchar_t ** text, uint32_t * tarrsz);
+
 bool picoLNode_realloc(pico_LNode * restrict curnode);
 
 bool picoLNode_merge(pico_LNode * restrict node, pico_LNode ** restrict ppcury);
@@ -75,7 +78,7 @@ typedef struct pico_File
 	} data;
 } pico_File;
 
-bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName);
+bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName, bool writemode);
 void picoFile_close(pico_File * restrict file);
 void picoFile_clearLines(pico_File * restrict file);
 const wchar_t * picoFile_read(pico_File * restrict file);
@@ -84,7 +87,8 @@ enum picoFile_writeRes
 {
 	writeRes_nothingNew = -1,
 	writeRes_openError  = -2,
-	writeRes_writeError = -3
+	writeRes_writeError = -3,
+	writeRes_memError   = -4
 };
 
 int picoFile_write(pico_File * restrict file);
@@ -139,8 +143,8 @@ bool pico_loop();
 void pico_updateScrbuf();
 
 
-uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16);
-uint32_t pico_convFromUnicode(const wchar_t * utf16, char ** putf8);
+uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, uint32_t * sz);
+uint32_t pico_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8, uint32_t * sz);
 uint32_t pico_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines);
 
 #endif
