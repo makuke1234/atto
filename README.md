@@ -13,14 +13,6 @@ it's designed to be used solely on Microsoft Windows (relies on Win32 API). MinG
 32-bit (x86) Windows binaries can be obtained [here](https://github.com/makuke1234/atto/releases).
 
 
-# Changelog
-
-* 1.1
-	* Fix arrow characters in status messages
-* 1.0
-	* Initial release
-
-
 # Features
 
 Currently a fixed number of features is supported:
@@ -39,6 +31,14 @@ Currently a fixed number of features is supported:
 	| ------------- | ------ |
 	| atto          | Shows help<br>![help image](./images/help.PNG) |
 	| atto \[file\] | Starts editor with the specified file,<br>file does not have to exist prior<br>(where \[file\] is the file's name) |
+
+
+# Changelog
+
+* 1.1
+	* Fix arrow characters in status messages
+* 1.0
+	* Initial release
 
 
 # Contributing
