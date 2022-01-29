@@ -1142,8 +1142,8 @@ bool pico_loop()
 						[VK_DELETE] = L"'DEL'",
 						[VK_LEFT]   = L"\u2190",
 						[VK_RIGHT]  = L"\u2192",
-						[VK_UP]     = L"\u25b2",
-						[VK_DOWN]   = L"\u25bc"
+						[VK_UP]     = L"\u2191",
+						[VK_DOWN]   = L"\u2193"
 					};
 					picoDS_statusDraw(&editor, buf[wVirtKey]);
 					break;
