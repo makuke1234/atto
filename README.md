@@ -1,6 +1,8 @@
 # atto
 
-![Release version](https://img.shields.io/badge/alpha-v0.1.0-red.svg)
+[![Release version](https://img.shields.io/github/v/release/makuke1234/atto?display_name=release&include_prereleases)](https://github.com/makuke1234/jsonlite/releases/latest)
+[![Total downloads](https://img.shields.io/github/downloads/makuke1234/atto/total)](https://github.com/makuke1234/jsonlite/releases)
+![C version](https://img.shields.io/badge/version-C99-blue.svg)
 
 Yet another text editor ought to be as simple as possible (following the KISS principle). It is purely written in C and
 is designed to be used solely on Microsoft Windows (relies on Win32 API). MinGW-32 GCC has been used as the compiler.
@@ -8,7 +10,7 @@ is designed to be used solely on Microsoft Windows (relies on Win32 API). MinGW-
 
 # Obtaining
 
-The x86 (32-bit) binary can be obtained [here](https://github.com/makuke1234/atto/raw/main/atto.exe).
+32-bit (x86) Windows binaries can be obtained [here](https://github.com/makuke1234/atto/releases).
 
 
 # Features
