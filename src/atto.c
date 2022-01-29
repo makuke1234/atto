@@ -5,46 +5,46 @@
 
 #include "profiling.h"
 
-pico_File file = { .hFile = INVALID_HANDLE_VALUE };
-pico_DS editor = { 0 };
+atto_File file = { .hFile = INVALID_HANDLE_VALUE };
+atto_DS editor = { 0 };
 
 int wmain(int argc, const wchar_t * argv[])
 {
 	// Initialise profiler, if applicable
 	initProfiler();
 
-	const wchar_t * fileName = pico_getFileName(argc, argv);
+	const wchar_t * fileName = atto_getFileName(argc, argv);
 	if (fileName == NULL)
 	{
-		pico_printHelp(argv[0]);
+		atto_printHelp(argv[0]);
 		return 1;
 	}
 
-	if (picoFile_open(&file, fileName, false) == false)
+	if (attoFile_open(&file, fileName, false) == false)
 	{
-		pico_printErr(picoE_file);
+		atto_printErr(attoE_file);
 		return 2;
 	}
-	picoFile_close(&file);
+	attoFile_close(&file);
 
 	// Set console title
-	picoFile_setConTitle(&file);
+	attoFile_setConTitle(&file);
 
-	if (!picoDS_init(&editor))
+	if (!attoDS_init(&editor))
 	{
-		pico_printErr(picoE_window);
+		atto_printErr(attoE_window);
 		return 3;
 	}
 
 	const wchar_t * res;
 	writeProfiler("wmain", "Starting to read file...");
-	if ((res = picoFile_read(&file)) != NULL)
+	if ((res = attoFile_read(&file)) != NULL)
 	{
-		picoDS_statusDraw(&editor, res);
+		attoDS_statusDraw(&editor, res);
 	}
 
-	picoDS_refresh(&editor);
-	while (pico_loop());
+	attoDS_refresh(&editor);
+	while (atto_loop());
 
 	return 0;
 }
@@ -77,9 +77,9 @@ uint32_t u32Max(uint32_t a, uint32_t b)
 	return (a < b) ? b : a;
 }
 
-pico_LNode * picoLNode_create(pico_LNode * curnode, pico_LNode * nextnode)
+atto_LNode * attoLNode_create(atto_LNode * curnode, atto_LNode * nextnode)
 {
-	pico_LNode * node = malloc(sizeof(pico_LNode));
+	atto_LNode * node = malloc(sizeof(atto_LNode));
 	if (node == NULL)
 	{
 		return NULL;
@@ -90,32 +90,32 @@ pico_LNode * picoLNode_create(pico_LNode * curnode, pico_LNode * nextnode)
 		// Normal empty line
 		if ((curnode->curx + curnode->freeSpaceLen) == curnode->lineEndx)
 		{
-			node->line = malloc(sizeof(wchar_t) * PICO_LNODE_DEFAULT_FREE);
+			node->line = malloc(sizeof(wchar_t) * atto_LNODE_DEFAULT_FREE);
 			if (node->line == NULL)
 			{
 				free(node);
 				return NULL;
 			}
-			node->lineEndx = PICO_LNODE_DEFAULT_FREE;
+			node->lineEndx = atto_LNODE_DEFAULT_FREE;
 		}
 		// Copy contents after cursor to this line
 		else
 		{
 			uint32_t contStart = curnode->curx + curnode->freeSpaceLen, contLen = curnode->lineEndx - contStart;
-			node->lineEndx = contLen + PICO_LNODE_DEFAULT_FREE;
+			node->lineEndx = contLen + atto_LNODE_DEFAULT_FREE;
 			node->line = malloc(sizeof(wchar_t) * node->lineEndx);
 			if (node->line == NULL)
 			{
 				free(node);
 				return NULL;
 			}
-			memcpy(node->line + PICO_LNODE_DEFAULT_FREE, curnode->line + contStart, sizeof(wchar_t) * contLen);
+			memcpy(node->line + atto_LNODE_DEFAULT_FREE, curnode->line + contStart, sizeof(wchar_t) * contLen);
 			curnode->freeSpaceLen += contLen;
 		}
 	}
 
 	node->curx = 0;
-	node->freeSpaceLen = PICO_LNODE_DEFAULT_FREE;
+	node->freeSpaceLen = atto_LNODE_DEFAULT_FREE;
 	node->prevNode = curnode;
 	node->nextNode = nextnode;
 	if (curnode != NULL)
@@ -130,9 +130,9 @@ pico_LNode * picoLNode_create(pico_LNode * curnode, pico_LNode * nextnode)
 	return node;
 }
 
-pico_LNode * picoLNode_createText(
-	pico_LNode * curnode,
-	pico_LNode * nextnode,
+atto_LNode * attoLNode_createText(
+	atto_LNode * curnode,
+	atto_LNode * nextnode,
 	const wchar_t * lineText,
 	int32_t mText
 )
@@ -147,13 +147,13 @@ pico_LNode * picoLNode_createText(
 		maxText = (uint32_t)mText;
 	}
 
-	pico_LNode * node = malloc(sizeof(pico_LNode));
+	atto_LNode * node = malloc(sizeof(atto_LNode));
 	if (node == NULL)
 	{
 		return NULL;
 	}
 
-	node->lineEndx = maxText + PICO_LNODE_DEFAULT_FREE;
+	node->lineEndx = maxText + atto_LNODE_DEFAULT_FREE;
 	node->line = malloc(sizeof(wchar_t) * node->lineEndx);
 	if (node->line == NULL)
 	{
@@ -164,7 +164,7 @@ pico_LNode * picoLNode_createText(
 	memcpy(node->line, lineText, sizeof(wchar_t) * maxText);
 
 	node->curx = maxText;
-	node->freeSpaceLen = PICO_LNODE_DEFAULT_FREE;
+	node->freeSpaceLen = atto_LNODE_DEFAULT_FREE;
 
 	node->prevNode = curnode;
 	node->nextNode = nextnode;
@@ -179,7 +179,7 @@ pico_LNode * picoLNode_createText(
 	return node;
 }
 
-bool picoLNode_getText(const pico_LNode * node, wchar_t ** text, uint32_t * tarrsz)
+bool attoLNode_getText(const atto_LNode * node, wchar_t ** text, uint32_t * tarrsz)
 {
 	if (text == NULL)
 	{
@@ -226,14 +226,14 @@ bool picoLNode_getText(const pico_LNode * node, wchar_t ** text, uint32_t * tarr
 	return true;
 }
 
-bool picoLNode_realloc(pico_LNode * restrict curnode)
+bool attoLNode_realloc(atto_LNode * restrict curnode)
 {
-	if (curnode->freeSpaceLen == PICO_LNODE_DEFAULT_FREE)
+	if (curnode->freeSpaceLen == atto_LNODE_DEFAULT_FREE)
 	{
 		return true;
 	}
 	uint32_t totalLen = curnode->lineEndx - curnode->freeSpaceLen;
-	void * newmem = realloc(curnode->line, sizeof(wchar_t) * (totalLen + PICO_LNODE_DEFAULT_FREE));
+	void * newmem = realloc(curnode->line, sizeof(wchar_t) * (totalLen + atto_LNODE_DEFAULT_FREE));
 	if (newmem == NULL)
 	{
 		return false;
@@ -244,26 +244,26 @@ bool picoLNode_realloc(pico_LNode * restrict curnode)
 	if (curnode->curx != totalLen)
 	{
 		memmove(
-			curnode->line + curnode->curx + PICO_LNODE_DEFAULT_FREE,
+			curnode->line + curnode->curx + atto_LNODE_DEFAULT_FREE,
 			curnode->line + curnode->curx + curnode->freeSpaceLen,
 			sizeof(wchar_t) * (totalLen - curnode->curx - curnode->freeSpaceLen)
 		);
 	}
 
-	curnode->lineEndx     = totalLen + PICO_LNODE_DEFAULT_FREE;
-	curnode->freeSpaceLen = PICO_LNODE_DEFAULT_FREE;
+	curnode->lineEndx     = totalLen + atto_LNODE_DEFAULT_FREE;
+	curnode->freeSpaceLen = atto_LNODE_DEFAULT_FREE;
 
 	return true;
 }
 
-bool picoLNode_merge(pico_LNode * restrict node, pico_LNode ** restrict ppcury)
+bool attoLNode_merge(atto_LNode * restrict node, atto_LNode ** restrict ppcury)
 {
 	if (node->nextNode == NULL)
 	{
 		return false;
 	}
 	
-	pico_LNode * restrict n = node->nextNode;
+	atto_LNode * restrict n = node->nextNode;
 
 	if (*ppcury == n)
 	{
@@ -271,7 +271,7 @@ bool picoLNode_merge(pico_LNode * restrict node, pico_LNode ** restrict ppcury)
 	}
 
 	// Allocate more memory for first line
-	void * linemem = realloc(node->line, sizeof(wchar_t) * (node->lineEndx - node->freeSpaceLen + n->lineEndx - n->freeSpaceLen + PICO_LNODE_DEFAULT_FREE));
+	void * linemem = realloc(node->line, sizeof(wchar_t) * (node->lineEndx - node->freeSpaceLen + n->lineEndx - n->freeSpaceLen + atto_LNODE_DEFAULT_FREE));
 	if (linemem == NULL)
 	{
 		return false;
@@ -279,11 +279,11 @@ bool picoLNode_merge(pico_LNode * restrict node, pico_LNode ** restrict ppcury)
 	node->line = linemem;
 
 	// Move cursor to end, if needed
-	picoLNode_moveCursor(node, (int32_t)node->lineEndx);
-	picoLNode_moveCursor(n, (int32_t)n->lineEndx);
+	attoLNode_moveCursor(node, (int32_t)node->lineEndx);
+	attoLNode_moveCursor(n, (int32_t)n->lineEndx);
 
-	node->freeSpaceLen = PICO_LNODE_DEFAULT_FREE;
-	node->lineEndx = node->curx + n->curx + PICO_LNODE_DEFAULT_FREE;
+	node->freeSpaceLen = atto_LNODE_DEFAULT_FREE;
+	node->lineEndx = node->curx + n->curx + atto_LNODE_DEFAULT_FREE;
 
 	memcpy(node->line + node->curx + node->freeSpaceLen, n->line, sizeof(wchar_t) * n->curx);
 	node->nextNode = n->nextNode;
@@ -292,12 +292,12 @@ bool picoLNode_merge(pico_LNode * restrict node, pico_LNode ** restrict ppcury)
 		node->nextNode->prevNode = node;
 	}
 
-	picoLNode_destroy(n); 
+	attoLNode_destroy(n); 
 
 	return true;
 }
 
-void picoLNode_moveCursor(pico_LNode * restrict node, int32_t delta)
+void attoLNode_moveCursor(atto_LNode * restrict node, int32_t delta)
 {
 	if (delta < 0)
 	{
@@ -317,7 +317,7 @@ void picoLNode_moveCursor(pico_LNode * restrict node, int32_t delta)
 	}
 }
 
-void picoLNode_destroy(pico_LNode * restrict node)
+void attoLNode_destroy(atto_LNode * restrict node)
 {
 	if (node->line != NULL)
 	{
@@ -327,7 +327,7 @@ void picoLNode_destroy(pico_LNode * restrict node)
 	free(node);
 }
 
-bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName, bool writemode)
+bool attoFile_open(atto_File * restrict file, const wchar_t * restrict fileName, bool writemode)
 {
 	if (fileName == NULL)
 	{
@@ -356,7 +356,7 @@ bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName,
 		return true;
 	}
 }
-void picoFile_close(pico_File * restrict file)
+void attoFile_close(atto_File * restrict file)
 {
 	if (file->hFile != INVALID_HANDLE_VALUE)
 	{
@@ -364,9 +364,9 @@ void picoFile_close(pico_File * restrict file)
 		file->hFile = INVALID_HANDLE_VALUE;
 	}
 }
-void picoFile_clearLines(pico_File * restrict file)
+void attoFile_clearLines(atto_File * restrict file)
 {
-	pico_LNode * node = file->data.firstNode;
+	atto_LNode * node = file->data.firstNode;
 	file->data.firstNode = NULL;
 	file->data.currentNode = NULL;
 	file->data.pcury = NULL;
@@ -376,27 +376,27 @@ void picoFile_clearLines(pico_File * restrict file)
 	}
 	while (node != NULL)
 	{
-		pico_LNode * next = node->nextNode;
-		picoLNode_destroy(node);
+		atto_LNode * next = node->nextNode;
+		attoLNode_destroy(node);
 		node = next;
 	}
 }
-const wchar_t * picoFile_read(pico_File * restrict file)
+const wchar_t * attoFile_read(atto_File * restrict file)
 {
-	if (picoFile_open(file, NULL, false) == false)
+	if (attoFile_open(file, NULL, false) == false)
 	{
 		return L"File opening error!\n";
 	}
 
 	// Clear lines
 
-	picoFile_clearLines(file);
+	attoFile_clearLines(file);
 
 	// Read file contents
 
 	// Get file size
 	DWORD fileSize = GetFileSize(file->hFile, NULL);
-	writeProfiler("picoFile_read", "Opened file with size of %u bytes", fileSize);
+	writeProfiler("attoFile_read", "Opened file with size of %u bytes", fileSize);
 
 	// Alloc array
 	char * bytes = malloc((fileSize + 1) * sizeof(char));
@@ -411,7 +411,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 		NULL,
 		NULL
 	);
-	picoFile_close(file);
+	attoFile_close(file);
 
 	if (!readFileRes)
 	{
@@ -424,35 +424,35 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 
 	// Convert to UTF-16
 	wchar_t * utf16;
-	uint32_t chars = pico_convToUnicode(bytes, (int)fileSize, &utf16, NULL);
+	uint32_t chars = atto_convToUnicode(bytes, (int)fileSize, &utf16, NULL);
 	free(bytes);
 
 	if (utf16 == NULL)
 	{
 		return L"Unicode conversion error!";
 	}
-	writeProfiler("picoFile_read", "Converted %u bytes of character to %u UTF-16 characters.", fileSize, chars);
-	writeProfiler("picoFile_read", "File UTF-16 contents \"%S\"", utf16);
+	writeProfiler("attoFile_read", "Converted %u bytes of character to %u UTF-16 characters.", fileSize, chars);
+	writeProfiler("attoFile_read", "File UTF-16 contents \"%S\"", utf16);
 	// Free loaded file memory
 
 	// Save lines to structure
 	wchar_t ** lines;
-	uint32_t numLines = pico_strnToLines(utf16, chars, &lines);
+	uint32_t numLines = atto_strnToLines(utf16, chars, &lines);
 	if (lines == NULL)
 	{
 		free(utf16);
 		return L"Line reading error!";
 	}
-	writeProfiler("picoFile_read", "Total of %u lines", numLines);
+	writeProfiler("attoFile_read", "Total of %u lines", numLines);
 	for (uint32_t i = 0; i < numLines; ++i)
 	{
-		writeProfiler("picoFile_read", "Line %d: \"%S\"", i, lines[i]);
+		writeProfiler("attoFile_read", "Line %d: \"%S\"", i, lines[i]);
 	}
 
-	picoFile_clearLines(file);
+	attoFile_clearLines(file);
 	if (numLines == 0)
 	{
-		file->data.firstNode = picoLNode_create(NULL, NULL);
+		file->data.firstNode = attoLNode_create(NULL, NULL);
 		if (file->data.firstNode == NULL)
 		{
 			free(lines);
@@ -462,7 +462,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 	}
 	else
 	{
-		file->data.firstNode = picoLNode_createText(NULL, NULL, lines[0], -1);
+		file->data.firstNode = attoLNode_createText(NULL, NULL, lines[0], -1);
 		if (file->data.firstNode == NULL)
 		{
 			free(lines);
@@ -473,7 +473,7 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 	file->data.currentNode = file->data.firstNode;
 	for (uint32_t i = 1; i < numLines; ++i)
 	{
-		pico_LNode * node = picoLNode_createText(file->data.currentNode, NULL, lines[i], -1);
+		atto_LNode * node = attoLNode_createText(file->data.currentNode, NULL, lines[i], -1);
 		if (node == NULL)
 		{
 			free(lines);
@@ -490,33 +490,33 @@ const wchar_t * picoFile_read(pico_File * restrict file)
 
 	return NULL;
 }
-int picoFile_write(pico_File * restrict file)
+int attoFile_write(atto_File * restrict file)
 {
-	if (picoFile_open(file, NULL, true) == false)
+	if (attoFile_open(file, NULL, true) == false)
 	{
 		return writeRes_openError;
 	}
 
 	if (file->canWrite == false)
 	{
-		picoFile_close(file);
+		attoFile_close(file);
 		return writeRes_writeError;
 	}
 
-	writeProfiler("picoFile_write", "Opened file for writing");
+	writeProfiler("attoFile_write", "Opened file for writing");
 
 	// Save to file here
 
 	wchar_t * lines = NULL, * line = NULL;
 	uint32_t linesCap = 0, linesLen = 0, lineCap = 0;
 
-	pico_LNode * node = file->data.firstNode;
+	atto_LNode * node = file->data.firstNode;
 
 	while (node != NULL)
 	{
-		if (picoLNode_getText(node, &line, &lineCap) == false)
+		if (attoLNode_getText(node, &line, &lineCap) == false)
 		{
-			writeProfiler("picoFile_write", "Failed to fetch line!");
+			writeProfiler("attoFile_write", "Failed to fetch line!");
 			if (line != NULL)
 			{
 				free(line);
@@ -530,7 +530,7 @@ int picoFile_write(pico_File * restrict file)
 
 		uint32_t lineLen = (uint32_t)wcsnlen(line, lineCap);
 
-		writeProfiler("picoFile_write", "Got line with size of %u characters. Line contents: \"%S\"", lineLen, line);
+		writeProfiler("attoFile_write", "Got line with size of %u characters. Line contents: \"%S\"", lineLen, line);
 
 		bool addnewline = node->nextNode != NULL;
 
@@ -560,7 +560,7 @@ int picoFile_write(pico_File * restrict file)
 			lines    = mem;
 			linesCap = newCap;
 
-			writeProfiler("picoFile_write", "Resized line string. New cap, length is %u, %u bytes.", linesCap, linesLen);
+			writeProfiler("attoFile_write", "Resized line string. New cap, length is %u, %u bytes.", linesCap, linesLen);
 		}
 
 		// Copy line
@@ -578,13 +578,13 @@ int picoFile_write(pico_File * restrict file)
 
 	free(line);
 
-	writeProfiler("picoFile_write", "All file contents (%u): \"%S\"", linesLen, lines);
+	writeProfiler("attoFile_write", "All file contents (%u): \"%S\"", linesLen, lines);
 
 	// Try to convert lines string to UTF-8
 
 	char * utf8 = NULL;
 	uint32_t utf8sz = 0;
-	pico_convFromUnicode(lines, (int)linesLen, &utf8, &utf8sz);
+	atto_convFromUnicode(lines, (int)linesLen, &utf8, &utf8sz);
 
 	// Free UTF-16 lines string
 	free(lines);
@@ -593,12 +593,12 @@ int picoFile_write(pico_File * restrict file)
 	
 	if (utf8 == NULL)
 	{
-		picoFile_close(file);
+		attoFile_close(file);
 		return writeRes_memError;
 	}
 
-	writeProfiler("picoFile_write", "Converted UTF-16 string to UTF-8 string");
-	writeProfiler("picoFile_write", "UTF-8 contents: \"%s\"", utf8);
+	writeProfiler("attoFile_write", "Converted UTF-16 string to UTF-8 string");
+	writeProfiler("attoFile_write", "UTF-8 contents: \"%s\"", utf8);
 
 	// Try to write UTF-8 lines string to file
 	DWORD dwWritten;
@@ -611,7 +611,7 @@ int picoFile_write(pico_File * restrict file)
 	);
 
 	// Close file
-	picoFile_close(file);
+	attoFile_close(file);
 
 	// Free utf8 string
 	free(utf8);
@@ -619,7 +619,7 @@ int picoFile_write(pico_File * restrict file)
 	// Do error checking
 	if (!res)
 	{
-		writeProfiler("picoFile_write", "Error writing to file");
+		writeProfiler("attoFile_write", "Error writing to file");
 		return writeRes_writeError;
 	}
 	else
@@ -627,21 +627,21 @@ int picoFile_write(pico_File * restrict file)
 		return (int)dwWritten;
 	}
 }
-void picoFile_setConTitle(pico_File * restrict file)
+void attoFile_setConTitle(atto_File * restrict file)
 {
 	wchar_t wndName[MAX_PATH];
 	size_t fnamelen = wcslen(file->fileName);
 	memcpy(wndName, file->fileName, fnamelen * sizeof(wchar_t));
-	wcscpy_s(wndName + fnamelen, MAX_PATH - fnamelen, L" - pico");
+	wcscpy_s(wndName + fnamelen, MAX_PATH - fnamelen, L" - atto");
 	SetConsoleTitleW(wndName);
 }
 
 
-bool picoFile_addNormalCh(pico_File * restrict file, wchar_t ch)
+bool attoFile_addNormalCh(atto_File * restrict file, wchar_t ch)
 {
-	pico_LNode * node = file->data.currentNode;
+	atto_LNode * node = file->data.currentNode;
 
-	if (node->freeSpaceLen < 1 && !picoLNode_realloc(node))
+	if (node->freeSpaceLen < 1 && !attoLNode_realloc(node))
 	{
 		return false;
 	}
@@ -651,14 +651,14 @@ bool picoFile_addNormalCh(pico_File * restrict file, wchar_t ch)
 	--node->freeSpaceLen;
 	return true;
 }
-bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
+bool attoFile_addSpecialCh(atto_File * restrict file, wchar_t ch)
 {
 	switch (ch)
 	{
 	case VK_TAB:
 		for (int i = 0; i < 4; ++i)
 		{
-			if (picoFile_addNormalCh(file, ' ') == false)
+			if (attoFile_addNormalCh(file, ' ') == false)
 			{
 				return false;
 			}
@@ -666,36 +666,36 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 		break;
 	case VK_OEM_BACKTAB:
 		// Check if there's 4 spaces before the caret
-		if (picoFile_checkLineAt(file, -4, L"    ", 4))
+		if (attoFile_checkLineAt(file, -4, L"    ", 4))
 		{
 			for (int i = 0; i < 4; ++i)
 			{
-				picoFile_deleteBackward(file);
+				attoFile_deleteBackward(file);
 			}
 		}
 		// If there isn't, check if there's 4 spaces after the caret
-		else if (picoFile_checkLineAt(file, 0, L"    ", 4))
+		else if (attoFile_checkLineAt(file, 0, L"    ", 4))
 		{
 			for (int i = 0; i < 4; ++i)
 			{
-				picoFile_deleteForward(file);
+				attoFile_deleteForward(file);
 			}
 		}
 		break;
 	case VK_RETURN:	// Enter key
-		picoFile_addNewLine(file);
+		attoFile_addNewLine(file);
 		break;
 	case VK_BACK:	// Backspace
-		picoFile_deleteBackward(file);
+		attoFile_deleteBackward(file);
 		break;
 	case VK_DELETE:	// Delete
-		picoFile_deleteForward(file);
+		attoFile_deleteForward(file);
 		break;
 	// Move cursor
 	case VK_LEFT:	// Left arrow
 		if (file->data.currentNode->curx > 0)
 		{
-			picoLNode_moveCursor(file->data.currentNode, -1);
+			attoLNode_moveCursor(file->data.currentNode, -1);
 		}
 		else if (file->data.currentNode->prevNode != NULL)
 		{
@@ -705,7 +705,7 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 	case VK_RIGHT:	// Right arrow
 		if ((file->data.currentNode->curx + file->data.currentNode->freeSpaceLen) < file->data.currentNode->lineEndx)
 		{
-			picoLNode_moveCursor(file->data.currentNode, 1);
+			attoLNode_moveCursor(file->data.currentNode, 1);
 		}
 		else if (file->data.currentNode->nextNode != NULL)
 		{
@@ -731,9 +731,9 @@ bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch)
 	return true;
 }
 
-bool picoFile_checkLineAt(const pico_File * restrict file, int32_t maxdelta, const wchar_t * string, uint32_t maxString)
+bool attoFile_checkLineAt(const atto_File * restrict file, int32_t maxdelta, const wchar_t * string, uint32_t maxString)
 {
-	const pico_LNode * restrict node = file->data.currentNode;
+	const atto_LNode * restrict node = file->data.currentNode;
 	if (node == NULL)
 	{
 		return false;
@@ -768,9 +768,9 @@ bool picoFile_checkLineAt(const pico_File * restrict file, int32_t maxdelta, con
 
 	return true;
 }
-bool picoFile_deleteForward(pico_File * restrict file)
+bool attoFile_deleteForward(atto_File * restrict file)
 {
-	pico_LNode * node = file->data.currentNode;
+	atto_LNode * node = file->data.currentNode;
 	if ((node->curx + node->freeSpaceLen) < node->lineEndx)
 	{
 		++node->freeSpaceLen;
@@ -778,16 +778,16 @@ bool picoFile_deleteForward(pico_File * restrict file)
 	}
 	else if (node->nextNode != NULL)
 	{
-		return picoLNode_merge(node, &file->data.pcury);
+		return attoLNode_merge(node, &file->data.pcury);
 	}
 	else
 	{
 		return false;
 	}
 }
-bool picoFile_deleteBackward(pico_File * restrict file)
+bool attoFile_deleteBackward(atto_File * restrict file)
 {
-	pico_LNode * node = file->data.currentNode;
+	atto_LNode * node = file->data.currentNode;
 	if (node->curx > 0)
 	{
 		--node->curx;
@@ -798,16 +798,16 @@ bool picoFile_deleteBackward(pico_File * restrict file)
 	{
 		// Add current node data to previous node data
 		file->data.currentNode = node->prevNode;
-		return picoLNode_merge(file->data.currentNode, &file->data.pcury);
+		return attoLNode_merge(file->data.currentNode, &file->data.pcury);
 	}
 	else
 	{
 		return false;
 	}
 }
-bool picoFile_addNewLine(pico_File * restrict file)
+bool attoFile_addNewLine(atto_File * restrict file)
 {
-	pico_LNode * node = picoLNode_create(file->data.currentNode, file->data.currentNode->nextNode);
+	atto_LNode * node = attoLNode_create(file->data.currentNode, file->data.currentNode->nextNode);
 	if (node == NULL)
 	{
 		return false;
@@ -818,11 +818,11 @@ bool picoFile_addNewLine(pico_File * restrict file)
 	return true;
 }
 
-void picoFile_updateCury(pico_File * restrict file, uint32_t height)
+void attoFile_updateCury(atto_File * restrict file, uint32_t height)
 {
 	if (file->data.pcury == NULL)
 	{
-		pico_LNode * node = file->data.currentNode;
+		atto_LNode * node = file->data.currentNode;
 		for (uint32_t i = 0; i < height && node->prevNode != NULL; ++i)
 		{
 			node = node->prevNode;
@@ -831,7 +831,7 @@ void picoFile_updateCury(pico_File * restrict file, uint32_t height)
 	}
 	else
 	{
-		pico_LNode * node = file->data.currentNode;
+		atto_LNode * node = file->data.currentNode;
 		for (uint32_t i = 0; i < height && node != NULL; ++i)
 		{
 			if (node == file->data.pcury)
@@ -853,12 +853,12 @@ void picoFile_updateCury(pico_File * restrict file, uint32_t height)
 		}
 
 		file->data.pcury = NULL;
-		picoFile_updateCury(file, height);
+		attoFile_updateCury(file, height);
 	}
 }
 
 
-void picoFile_destruct(pico_File * restrict file)
+void attoFile_destruct(atto_File * restrict file)
 {
 	if (file->fileName != NULL && file->hFile != INVALID_HANDLE_VALUE)
 	{
@@ -868,12 +868,12 @@ void picoFile_destruct(pico_File * restrict file)
 }
 
 
-bool picoDS_init(pico_DS * restrict ds)
+bool attoDS_init(atto_DS * restrict ds)
 {
 	ds->conIn  = GetStdHandle(STD_INPUT_HANDLE);
 	ds->conOut = GetStdHandle(STD_OUTPUT_HANDLE);
 	// Set exit handler
-	atexit(&pico_exitHandler);
+	atexit(&atto_exitHandler);
 
 	// Get console current size
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -918,9 +918,9 @@ bool picoDS_init(pico_DS * restrict ds)
 
 	return true;
 }
-void picoDS_refresh(pico_DS * restrict ds)
+void attoDS_refresh(atto_DS * restrict ds)
 {
-	pico_updateScrbuf();
+	atto_updateScrbuf();
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
 		ds->scrbuf.handle,
@@ -930,9 +930,9 @@ void picoDS_refresh(pico_DS * restrict ds)
 		&dwBytes
 	);
 }
-void picoDS_refreshAll(pico_DS * restrict ds)
+void attoDS_refreshAll(atto_DS * restrict ds)
 {
-	pico_updateScrbuf();
+	atto_updateScrbuf();
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
 		ds->scrbuf.handle,
@@ -942,7 +942,7 @@ void picoDS_refreshAll(pico_DS * restrict ds)
 		&dwBytes
 	);
 }
-void picoDS_statusDraw(pico_DS * restrict ds, const wchar_t * message)
+void attoDS_statusDraw(atto_DS * restrict ds, const wchar_t * message)
 {
 	size_t len = wcslen(message), effLen = (len > ds->scrbuf.w) ? (size_t)ds->scrbuf.w : len;
 	wchar_t * restrict lastLine = ds->scrbuf.mem + (ds->scrbuf.h - 1) * ds->scrbuf.w;
@@ -955,9 +955,9 @@ void picoDS_statusDraw(pico_DS * restrict ds, const wchar_t * message)
 	{
 		lastLine[i] = L' ';
 	}
-	picoDS_statusRefresh(ds);
+	attoDS_statusRefresh(ds);
 }
-void picoDS_statusRefresh(pico_DS * restrict ds)
+void attoDS_statusRefresh(atto_DS * restrict ds)
 {
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
@@ -969,7 +969,7 @@ void picoDS_statusRefresh(pico_DS * restrict ds)
 	);
 }
 
-void picoDS_destruct(pico_DS * restrict ds)
+void attoDS_destruct(atto_DS * restrict ds)
 {
 	if (ds->scrbuf.mem)
 	{
@@ -983,40 +983,40 @@ void picoDS_destruct(pico_DS * restrict ds)
 }
 
 
-void pico_exitHandler()
+void atto_exitHandler()
 {
 	// Clear resources
-	picoFile_destruct(&file);
-	picoDS_destruct(&editor);
+	attoFile_destruct(&file);
+	attoDS_destruct(&editor);
 }
 
-const wchar_t * pico_getFileName(const int argc, const wchar_t * const * const argv)
+const wchar_t * atto_getFileName(const int argc, const wchar_t * const * const argv)
 {
 	return (argc > 1) ? argv[1] : NULL;
 }
-void pico_printHelp(const wchar_t * app)
+void atto_printHelp(const wchar_t * app)
 {
 	puts("Correct usage:");
 	fputws(app, stdout);
 	puts(" [file]");
 }
 
-static const char * pico_errCodes[picoE_num_of_elems] = {
+static const char * atto_errCodes[attoE_num_of_elems] = {
 	"Uknown error occurred!",
 	"Error reading file!",
 	"Error initialising window!"
 };
-void pico_printErr(enum picoE errCode)
+void atto_printErr(enum attoE errCode)
 {
-	if (errCode >= picoE_num_of_elems)
+	if (errCode >= attoE_num_of_elems)
 	{
-		errCode = picoE_unknown;
+		errCode = attoE_unknown;
 	}
 
-	puts(pico_errCodes[errCode]);
+	puts(atto_errCodes[errCode]);
 }
 
-bool pico_loop()
+bool atto_loop()
 {
 	enum SpecialAsciiCodes
 	{
@@ -1066,38 +1066,38 @@ bool pico_loop()
 			else if (boolGet(keybuffer, sac_Ctrl_R) && !boolGet(prevkeybuffer, sac_Ctrl_R))	// Reload file
 			{
 				const wchar_t * res;
-				if ((res = picoFile_read(&file)) != NULL)
+				if ((res = attoFile_read(&file)) != NULL)
 				{
-					picoDS_statusDraw(&editor, res);
+					attoDS_statusDraw(&editor, res);
 				}
 				else
 				{
-					picoDS_statusDraw(&editor, L"File reloaded successfully!");
+					attoDS_statusDraw(&editor, L"File reloaded successfully!");
 				}
-				picoDS_refresh(&editor);
+				attoDS_refresh(&editor);
 			}
 			else if (boolGet(keybuffer, sac_Ctrl_S) && !boolGet(prevkeybuffer, sac_Ctrl_S))	// Save file
 			{
-				int saved = picoFile_write(&file);
+				int saved = attoFile_write(&file);
 				switch (saved)
 				{
 				case writeRes_nothingNew:
-					picoDS_statusDraw(&editor, L"Nothing new to save");
+					attoDS_statusDraw(&editor, L"Nothing new to save");
 					break;
 				case writeRes_openError:
-					picoDS_statusDraw(&editor, L"File open error!");
+					attoDS_statusDraw(&editor, L"File open error!");
 					break;
 				case writeRes_writeError:
-					picoDS_statusDraw(&editor, L"File is write-protected!");
+					attoDS_statusDraw(&editor, L"File is write-protected!");
 					break;
 				case writeRes_memError:
-					picoDS_statusDraw(&editor, L"Memory allocation error!");
+					attoDS_statusDraw(&editor, L"Memory allocation error!");
 					break;
 				default:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"Wrote %d bytes.", saved);
-					picoDS_statusDraw(&editor, tempstr);
+					attoDS_statusDraw(&editor, tempstr);
 				}
 				}
 			}
@@ -1106,10 +1106,10 @@ bool pico_loop()
 			{
 				wchar_t tempstr[MAX_STATUS];
 				swprintf_s(tempstr, MAX_STATUS, L"'%c' #%d", key, keyCount);
-				picoDS_statusDraw(&editor, tempstr);
-				if (picoFile_addNormalCh(&file, key))
+				attoDS_statusDraw(&editor, tempstr);
+				if (attoFile_addNormalCh(&file, key))
 				{
-					picoDS_refresh(&editor);
+					attoDS_refresh(&editor);
 				}
 			}
 			// Special keys
@@ -1120,12 +1120,12 @@ bool pico_loop()
 				case VK_TAB:
 					if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
 					{
-						picoDS_statusDraw(&editor, L"\u2191 + 'TAB'");
+						attoDS_statusDraw(&editor, L"\u2191 + 'TAB'");
 						wVirtKey = VK_OEM_BACKTAB;
 					}
 					else
 					{
-						picoDS_statusDraw(&editor, L"'TAB'");
+						attoDS_statusDraw(&editor, L"'TAB'");
 					}
 					break;
 				case VK_RETURN:	// Enter key
@@ -1145,34 +1145,34 @@ bool pico_loop()
 						[VK_UP]     = L"\u2191",
 						[VK_DOWN]   = L"\u2193"
 					};
-					picoDS_statusDraw(&editor, buf[wVirtKey]);
+					attoDS_statusDraw(&editor, buf[wVirtKey]);
 					break;
 				}
 				case VK_CAPITAL:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'CAPS' %s", (GetKeyState(VK_CAPITAL) & 0x0001) ? L"On" : L"Off");
-					picoDS_statusDraw(&editor, tempstr);
+					attoDS_statusDraw(&editor, tempstr);
 					break;
 				}
 				case VK_NUMLOCK:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'NUMLOCK' %s", (GetKeyState(VK_NUMLOCK) & 0x0001) ? L"On" : L"Off");
-					picoDS_statusDraw(&editor, tempstr);
+					attoDS_statusDraw(&editor, tempstr);
 					break;
 				}
 				case VK_SCROLL:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'SCRLOCK' %s", (GetKeyState(VK_SCROLL) & 0x0001) ? L"On" : L"Off");
-					picoDS_statusDraw(&editor, tempstr);
+					attoDS_statusDraw(&editor, tempstr);
 					break;
 				}
 				}
-				if (picoFile_addSpecialCh(&file, wVirtKey))
+				if (attoFile_addSpecialCh(&file, wVirtKey))
 				{
-					picoDS_refresh(&editor);
+					attoDS_refresh(&editor);
 				}
 			}
 		}
@@ -1188,16 +1188,16 @@ bool pico_loop()
 
 	return true;
 }
-void pico_updateScrbuf()
+void atto_updateScrbuf()
 {
-	picoFile_updateCury(&file, editor.scrbuf.h - 2);
+	attoFile_updateCury(&file, editor.scrbuf.h - 2);
 	file.data.curx = (uint32_t)i32Max(0, (int32_t)file.data.currentNode->curx - (int32_t)editor.scrbuf.w);
 	uint32_t size = editor.scrbuf.w * editor.scrbuf.h;
 	for (uint32_t i = 0; i < size; ++i)
 	{
 		editor.scrbuf.mem[i] = L' ';
 	}
-	pico_LNode * node = file.data.pcury;
+	atto_LNode * node = file.data.pcury;
 	for (uint32_t i = 0; i < editor.scrbuf.h - 1; ++i)
 	{
 		if (node == NULL)
@@ -1247,7 +1247,7 @@ void pico_updateScrbuf()
 	}
 }
 
-uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, uint32_t * sz)
+uint32_t atto_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, uint32_t * sz)
 {
 	if (numBytes == 0)
 	{
@@ -1299,7 +1299,7 @@ uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, 
 	);
 	return size;
 }
-uint32_t pico_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8, uint32_t * sz)
+uint32_t atto_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8, uint32_t * sz)
 {
 	// Quory the needed size
 	uint32_t size = (uint32_t)WideCharToMultiByte(
@@ -1345,7 +1345,7 @@ uint32_t pico_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8
 	);
 	return size;
 }
-uint32_t pico_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines)
+uint32_t atto_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines)
 {
 	// Count number of newline characters
 	uint32_t newlines = 1;

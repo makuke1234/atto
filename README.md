@@ -18,7 +18,7 @@ it's designed to be used solely on Microsoft Windows (relies on Win32 API). MinG
 Currently a fixed number of features is supported:
 - [x] file must be given as a command-line argument, 'raw editing'/'saving later to a file' is impossible for a reason
 - [x] all saved files use LF line-ending format
-- [x] pico editor utilizes the whole command prompt window, window is as big as your console currently is
+- [x] atto editor utilizes the whole command prompt window, window is as big as your console currently is
 - [x] the last line of the window is dedicated to status, for example showing success or failure when an attempt to save the file has been made
 - [x] the following keyboard shortcuts:
 	| Key    | Action |
@@ -41,7 +41,7 @@ Currently a fixed number of features is supported:
 ## Last key shown on status bar with respective repeat count
 ![Key frequency](./images/keyFreq.PNG)
 
-## Saving the was successful, file size is 48 bytes
+## Saving the was successful, file size is now 48 bytes
 [!Saving success](./images/savingSuc.PNG)
 
 

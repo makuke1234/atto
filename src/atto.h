@@ -1,5 +1,5 @@
-#ifndef PICO_H
-#define PICO_H
+#ifndef atto_H
+#define atto_H
 
 #define WIN32_LEAN_AND_MEAN
 #define WIN32_EXTRA_LEAN
@@ -37,53 +37,53 @@ uint32_t u32Max(uint32_t a, uint32_t b);
 
 */
 
-#define PICO_LNODE_DEFAULT_FREE 10
+#define atto_LNODE_DEFAULT_FREE 10
 
-typedef struct pico_LNode
+typedef struct atto_LNode
 {
 	wchar_t * line;
 	uint32_t lineEndx, curx, freeSpaceLen;
-	struct pico_LNode * prevNode, * nextNode;
-} pico_LNode;
+	struct atto_LNode * prevNode, * nextNode;
+} atto_LNode;
 
-pico_LNode * picoLNode_create(pico_LNode * curnode, pico_LNode * nextnode);
-pico_LNode * picoLNode_createText(
-	pico_LNode * curnode,
-	pico_LNode * nextnode,
+atto_LNode * attoLNode_create(atto_LNode * curnode, atto_LNode * nextnode);
+atto_LNode * attoLNode_createText(
+	atto_LNode * curnode,
+	atto_LNode * nextnode,
 	const wchar_t * lineText,
 	int32_t maxText
 );
 
-bool picoLNode_getText(const pico_LNode * node, wchar_t ** text, uint32_t * tarrsz);
+bool attoLNode_getText(const atto_LNode * node, wchar_t ** text, uint32_t * tarrsz);
 
-bool picoLNode_realloc(pico_LNode * restrict curnode);
+bool attoLNode_realloc(atto_LNode * restrict curnode);
 
-bool picoLNode_merge(pico_LNode * restrict node, pico_LNode ** restrict ppcury);
+bool attoLNode_merge(atto_LNode * restrict node, atto_LNode ** restrict ppcury);
 
-void picoLNode_moveCursor(pico_LNode * restrict node, int32_t delta);
+void attoLNode_moveCursor(atto_LNode * restrict node, int32_t delta);
 
-void picoLNode_destroy(pico_LNode * restrict node);
+void attoLNode_destroy(atto_LNode * restrict node);
 
-typedef struct pico_File
+typedef struct atto_File
 {
 	const wchar_t * fileName;
 	HANDLE hFile;
 	bool canWrite;
 	struct
 	{
-		pico_LNode * firstNode;
-		pico_LNode * currentNode;
-		pico_LNode * pcury;
+		atto_LNode * firstNode;
+		atto_LNode * currentNode;
+		atto_LNode * pcury;
 		uint32_t curx;
 	} data;
-} pico_File;
+} atto_File;
 
-bool picoFile_open(pico_File * restrict file, const wchar_t * restrict fileName, bool writemode);
-void picoFile_close(pico_File * restrict file);
-void picoFile_clearLines(pico_File * restrict file);
-const wchar_t * picoFile_read(pico_File * restrict file);
+bool attoFile_open(atto_File * restrict file, const wchar_t * restrict fileName, bool writemode);
+void attoFile_close(atto_File * restrict file);
+void attoFile_clearLines(atto_File * restrict file);
+const wchar_t * attoFile_read(atto_File * restrict file);
 
-enum picoFile_writeRes
+enum attoFile_writeRes
 {
 	writeRes_nothingNew = -1,
 	writeRes_openError  = -2,
@@ -91,21 +91,21 @@ enum picoFile_writeRes
 	writeRes_memError   = -4
 };
 
-int picoFile_write(pico_File * restrict file);
-void picoFile_setConTitle(pico_File * restrict file);
+int attoFile_write(atto_File * restrict file);
+void attoFile_setConTitle(atto_File * restrict file);
 
-bool picoFile_addNormalCh(pico_File * restrict file, wchar_t ch);
-bool picoFile_addSpecialCh(pico_File * restrict file, wchar_t ch);
+bool attoFile_addNormalCh(atto_File * restrict file, wchar_t ch);
+bool attoFile_addSpecialCh(atto_File * restrict file, wchar_t ch);
 
-bool picoFile_checkLineAt(const pico_File * restrict file, int32_t maxdelta, const wchar_t * string, uint32_t maxString);
-bool picoFile_deleteForward(pico_File * restrict file);
-bool picoFile_deleteBackward(pico_File * restrict file);
-bool picoFile_addNewLine(pico_File * restrict file);
-void picoFile_updateCury(pico_File * restrict file, uint32_t height);
+bool attoFile_checkLineAt(const atto_File * restrict file, int32_t maxdelta, const wchar_t * string, uint32_t maxString);
+bool attoFile_deleteForward(atto_File * restrict file);
+bool attoFile_deleteBackward(atto_File * restrict file);
+bool attoFile_addNewLine(atto_File * restrict file);
+void attoFile_updateCury(atto_File * restrict file, uint32_t height);
 
-void picoFile_destruct(pico_File * restrict file);
+void attoFile_destruct(atto_File * restrict file);
 
-typedef struct pico_DS
+typedef struct atto_DS
 {
 	HANDLE conIn, conOut;
 	struct
@@ -115,36 +115,36 @@ typedef struct pico_DS
 		uint32_t w, h;
 	} scrbuf;
 	COORD cursorpos;
-} pico_DS;
+} atto_DS;
 
-bool picoDS_init(pico_DS * restrict ds);
-void picoDS_refresh(pico_DS * restrict ds);
-void picoDS_refreshAll(pico_DS * restrict ds);
-void picoDS_statusDraw(pico_DS * restrict ds, const wchar_t * message);
-void picoDS_statusRefresh(pico_DS * restrict ds);
+bool attoDS_init(atto_DS * restrict ds);
+void attoDS_refresh(atto_DS * restrict ds);
+void attoDS_refreshAll(atto_DS * restrict ds);
+void attoDS_statusDraw(atto_DS * restrict ds, const wchar_t * message);
+void attoDS_statusRefresh(atto_DS * restrict ds);
 
-void picoDS_destruct(pico_DS * restrict ds);
+void attoDS_destruct(atto_DS * restrict ds);
 
-void pico_exitHandler();
+void atto_exitHandler();
 
-const wchar_t * pico_getFileName(const int argc, const wchar_t * const * const argv);
-void pico_printHelp(const wchar_t * app);
+const wchar_t * atto_getFileName(const int argc, const wchar_t * const * const argv);
+void atto_printHelp(const wchar_t * app);
 
-enum picoE
+enum attoE
 {
-	picoE_unknown,
-	picoE_file,
-	picoE_window,
+	attoE_unknown,
+	attoE_file,
+	attoE_window,
 
-	picoE_num_of_elems
+	attoE_num_of_elems
 };
-void pico_printErr(enum picoE errCode);
-bool pico_loop();
-void pico_updateScrbuf();
+void atto_printErr(enum attoE errCode);
+bool atto_loop();
+void atto_updateScrbuf();
 
 
-uint32_t pico_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, uint32_t * sz);
-uint32_t pico_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8, uint32_t * sz);
-uint32_t pico_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines);
+uint32_t atto_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, uint32_t * sz);
+uint32_t atto_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8, uint32_t * sz);
+uint32_t atto_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines);
 
 #endif
