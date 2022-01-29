@@ -55,7 +55,7 @@ pico_LNode * picoLNode_createText(
 );
 bool picoLNode_realloc(pico_LNode * restrict curnode);
 
-bool picoLNode_merge(pico_LNode * restrict node);
+bool picoLNode_merge(pico_LNode * restrict node, pico_LNode ** restrict ppcury);
 
 void picoLNode_moveCursor(pico_LNode * restrict node, int32_t delta);
 

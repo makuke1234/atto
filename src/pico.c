@@ -206,7 +206,7 @@ bool picoLNode_realloc(pico_LNode * restrict curnode)
 	return true;
 }
 
-bool picoLNode_merge(pico_LNode * restrict node)
+bool picoLNode_merge(pico_LNode * restrict node, pico_LNode ** restrict ppcury)
 {
 	if (node->nextNode == NULL)
 	{
@@ -214,6 +214,11 @@ bool picoLNode_merge(pico_LNode * restrict node)
 	}
 	
 	pico_LNode * restrict n = node->nextNode;
+
+	if (*ppcury == n)
+	{
+		*ppcury = node;
+	}
 
 	// Allocate more memory for first line
 	void * linemem = realloc(node->line, sizeof(wchar_t) * (node->lineEndx - node->freeSpaceLen + n->lineEndx - n->freeSpaceLen + PICO_LNODE_DEFAULT_FREE));
@@ -231,9 +236,12 @@ bool picoLNode_merge(pico_LNode * restrict node)
 	node->lineEndx = node->curx + n->curx + PICO_LNODE_DEFAULT_FREE;
 
 	memcpy(node->line + node->curx + node->freeSpaceLen, n->line, sizeof(wchar_t) * n->curx);
-	n->nextNode->prevNode = node;
 	node->nextNode = n->nextNode;
-
+	if (node->nextNode != NULL)
+	{
+		node->nextNode->prevNode = node;
+	}
+	
 	picoLNode_destroy(n); 
 
 	return true;
@@ -591,7 +599,7 @@ bool picoFile_deleteForward(pico_File * restrict file)
 	}
 	else if (node->nextNode != NULL)
 	{
-		return picoLNode_merge(node);
+		return picoLNode_merge(node, &file->data.pcury);
 	}
 	else
 	{
@@ -611,7 +619,7 @@ bool picoFile_deleteBackward(pico_File * restrict file)
 	{
 		// Add current node data to previous node data
 		file->data.currentNode = node->prevNode;
-		return picoLNode_merge(file->data.currentNode);
+		return picoLNode_merge(file->data.currentNode, &file->data.pcury);
 	}
 	else
 	{
