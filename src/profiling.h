@@ -8,7 +8,7 @@
 #include <time.h>
 
 void initProfiler(void);
-void writeProfiler(const char * function, const char * format, ...);
+void writeProfiler(const char * restrict function, const char * restrict format, ...);
 void profilerStart(void);
 void profilerEnd(const char * funcName);
 

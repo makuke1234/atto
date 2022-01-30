@@ -2,19 +2,29 @@
 
 #if PROFILING_ENABLE == 1
 
-static FILE * profilingFile;
+#include <stdlib.h>
+
+static FILE * profilingFile = NULL;
 
 void initProfiler(void)
 {
 	profilingFile = fopen("profiler.txt", "a+");
+	if (profilingFile == NULL)
+	{
+		fputs("Error opening profiling file!\n", stderr);
+		exit(1);
+	}
 	fputs("\n", profilingFile);
 	writeProfiler("initProfiler", "Started application...");
 }
-void writeProfiler(const char * function, const char * format, ...)
+void writeProfiler(const char * restrict function, const char * restrict format, ...)
 {
 	if (profilingFile == NULL)
+	{
+		fputs("Profiling file not open!\n", stderr);
 		return;
-	
+	}
+
 	// Write timestamp
 	time_t rawtime;
 	time(&rawtime);
@@ -53,9 +63,11 @@ void profilerStart(void)
 void profilerEnd(const char * funcName)
 {
 	if (curStackLen == 0)
+	{
 		return;
-	double elapsed = (double)(clock() - profilerStack[--curStackLen]) / (double)CLOCKS_PER_SEC;
-	writeProfiler(funcName, "Elapsed %.3f s", elapsed);
+	}
+	--curStackLen;
+	writeProfiler(funcName, "Elapsed %.3f s", (double)(clock() - profilerStack[curStackLen]) / (double)CLOCKS_PER_SEC);
 }
 
 #endif

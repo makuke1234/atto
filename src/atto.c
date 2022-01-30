@@ -5,14 +5,14 @@
 #include <string.h>
 
 
-attoFile_t file   = { .hFile = INVALID_HANDLE_VALUE };
-attoData_t editor = { 0 };
+attoFile_t file;
+attoData_t editor;
 
-bool boolGet(uint8_t * arr, const size_t index)
+bool boolGet(uint8_t * restrict arr, size_t index)
 {
 	return (arr[index / 8] >> (index % 8)) & 0x01;
 }
-void boolPut(uint8_t * arr, const size_t index, const bool value)
+void boolPut(uint8_t * restrict arr, size_t index, bool value)
 {
 	const size_t in1 = index / 8;
 	const uint8_t pattern = 0x01 << (index - (8 * in1));
@@ -37,19 +37,18 @@ uint32_t u32Max(uint32_t a, uint32_t b)
 }
 
 
-
 void atto_exitHandler(void)
 {
 	// Clear resources
 	attoFile_destruct(&file);
-	attoDS_destruct(&editor);
+	attoData_destruct(&editor);
 }
 
-const wchar_t * atto_getFileName(const int argc, const wchar_t * const * const argv)
+const wchar_t * atto_getFileName(int argc, const wchar_t * const * const argv)
 {
 	return (argc > 1) ? argv[1] : NULL;
 }
-void atto_printHelp(const wchar_t * app)
+void atto_printHelp(const wchar_t * restrict app)
 {
 	puts("Correct usage:");
 	fputws(app, stdout);
@@ -84,19 +83,18 @@ bool atto_loop(void)
 	INPUT_RECORD ir;
 	DWORD evRead;
 	ReadConsoleInputW(editor.conIn, &ir, 1, &evRead);
-	if (evRead != 0 && ir.EventType == KEY_EVENT)
+	if (evRead && ir.EventType == KEY_EVENT)
 	{
 		static uint8_t keybuffer[32] = { 0 }, prevkeybuffer[32] = { 0 };
 		static wchar_t prevkey;
-		//static bool prevstate;
 
 		static int keyCount = 1;
 
 		wchar_t key      = ir.Event.KeyEvent.uChar.UnicodeChar;
 		wchar_t wVirtKey = ir.Event.KeyEvent.wVirtualKeyCode;
-		bool state       = ir.Event.KeyEvent.bKeyDown != 0;
+		bool keydown     = ir.Event.KeyEvent.bKeyDown != 0;
 
-		if (state)
+		if (keydown)
 		{
 			if (key == prevkey)
 			{
@@ -108,7 +106,7 @@ bool atto_loop(void)
 			}
 		}
 
-		if (state)
+		if (keydown)
 		{
 			boolPut(keybuffer, key, true);
 			if (wVirtKey == VK_ESCAPE || key == sac_Ctrl_Q)	// Exit on Escape or Ctrl+Q
@@ -120,13 +118,13 @@ bool atto_loop(void)
 				const wchar_t * res;
 				if ((res = attoFile_read(&file)) != NULL)
 				{
-					attoDS_statusDraw(&editor, res);
+					attoData_statusDraw(&editor, res);
 				}
 				else
 				{
-					attoDS_statusDraw(&editor, L"File reloaded successfully!");
+					attoData_statusDraw(&editor, L"File reloaded successfully!");
 				}
-				attoDS_refresh(&editor);
+				attoData_refresh(&editor);
 			}
 			else if (boolGet(keybuffer, sac_Ctrl_S) && !boolGet(prevkeybuffer, sac_Ctrl_S))	// Save file
 			{
@@ -134,22 +132,22 @@ bool atto_loop(void)
 				switch (saved)
 				{
 				case writeRes_nothingNew:
-					attoDS_statusDraw(&editor, L"Nothing new to save");
+					attoData_statusDraw(&editor, L"Nothing new to save");
 					break;
 				case writeRes_openError:
-					attoDS_statusDraw(&editor, L"File open error!");
+					attoData_statusDraw(&editor, L"File open error!");
 					break;
 				case writeRes_writeError:
-					attoDS_statusDraw(&editor, L"File is write-protected!");
+					attoData_statusDraw(&editor, L"File is write-protected!");
 					break;
 				case writeRes_memError:
-					attoDS_statusDraw(&editor, L"Memory allocation error!");
+					attoData_statusDraw(&editor, L"Memory allocation error!");
 					break;
 				default:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"Wrote %d bytes.", saved);
-					attoDS_statusDraw(&editor, tempstr);
+					attoData_statusDraw(&editor, tempstr);
 				}
 				}
 			}
@@ -158,10 +156,10 @@ bool atto_loop(void)
 			{
 				wchar_t tempstr[MAX_STATUS];
 				swprintf_s(tempstr, MAX_STATUS, L"'%c' #%d", key, keyCount);
-				attoDS_statusDraw(&editor, tempstr);
+				attoData_statusDraw(&editor, tempstr);
 				if (attoFile_addNormalCh(&file, key))
 				{
-					attoDS_refresh(&editor);
+					attoData_refresh(&editor);
 				}
 			}
 			// Special keys
@@ -172,14 +170,11 @@ bool atto_loop(void)
 				case VK_TAB:
 					if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
 					{
-						attoDS_statusDraw(&editor, L"\u2191 + 'TAB'");
+						attoData_statusDraw(&editor, L"\u2191 + 'TAB'");
 						wVirtKey = VK_OEM_BACKTAB;
+						break;
 					}
-					else
-					{
-						attoDS_statusDraw(&editor, L"'TAB'");
-					}
-					break;
+					/* fall through */
 				case VK_RETURN:	// Enter key
 				case VK_BACK:	// Backspace
 				case VK_DELETE:	// Delete
@@ -189,6 +184,7 @@ bool atto_loop(void)
 				case VK_DOWN:	// Down arrow
 				{
 					static const wchar_t * buf[] = {
+						[VK_TAB]    = L"'TAB'",
 						[VK_RETURN] = L"'RET'",
 						[VK_BACK]   = L"'BS'",
 						[VK_DELETE] = L"'DEL'",
@@ -197,35 +193,35 @@ bool atto_loop(void)
 						[VK_UP]     = L"\u2191",
 						[VK_DOWN]   = L"\u2193"
 					};
-					attoDS_statusDraw(&editor, buf[wVirtKey]);
+					attoData_statusDraw(&editor, buf[wVirtKey]);
 					break;
 				}
 				case VK_CAPITAL:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'CAPS' %s", (GetKeyState(VK_CAPITAL) & 0x0001) ? L"On" : L"Off");
-					attoDS_statusDraw(&editor, tempstr);
+					attoData_statusDraw(&editor, tempstr);
 					break;
 				}
 				case VK_NUMLOCK:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'NUMLOCK' %s", (GetKeyState(VK_NUMLOCK) & 0x0001) ? L"On" : L"Off");
-					attoDS_statusDraw(&editor, tempstr);
+					attoData_statusDraw(&editor, tempstr);
 					break;
 				}
 				case VK_SCROLL:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'SCRLOCK' %s", (GetKeyState(VK_SCROLL) & 0x0001) ? L"On" : L"Off");
-					attoDS_statusDraw(&editor, tempstr);
+					attoData_statusDraw(&editor, tempstr);
 					break;
 				}
 				}
 
 				if (attoFile_addSpecialCh(&file, wVirtKey))
 				{
-					attoDS_refresh(&editor);
+					attoData_refresh(&editor);
 				}
 			}
 		}
@@ -234,7 +230,6 @@ bool atto_loop(void)
 			boolPut(keybuffer, key, false);
 		}
 		prevkey = key;
-		//prevstate = state;
 		memcpy(prevkeybuffer, keybuffer, 32 * sizeof(uint8_t));
 		FlushConsoleInputBuffer(editor.conIn);
 	}

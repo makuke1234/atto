@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 
-attoLineNode_t * attoLine_create(attoLineNode_t * curnode, attoLineNode_t * nextnode)
+attoLineNode_t * attoLine_create(attoLineNode_t * restrict curnode, attoLineNode_t * restrict nextnode)
 {
 	attoLineNode_t * node = malloc(sizeof(attoLineNode_t));
 	if (node == NULL)
@@ -14,7 +14,7 @@ attoLineNode_t * attoLine_create(attoLineNode_t * curnode, attoLineNode_t * next
 
 	if (curnode != NULL)
 	{
-		// Normal empty line
+		// Create normal empty line
 		if ((curnode->curx + curnode->freeSpaceLen) == curnode->lineEndx)
 		{
 			node->line = malloc(sizeof(wchar_t) * ATTO_LNODE_DEFAULT_FREE);
@@ -144,10 +144,8 @@ bool attoLine_getText(const attoLineNode_t * restrict self, wchar_t ** restrict 
 
 		*t = self->line[i];
 		++t;
-
 		++i;
 	}
-
 	*t = L'\0';
 
 	return true;
@@ -165,9 +163,7 @@ bool attoLine_realloc(attoLineNode_t * restrict self)
 	{
 		return false;
 	}
-
 	self->line = newmem;
-
 	if (self->curx != totalLen)
 	{
 		memmove(
@@ -198,7 +194,10 @@ bool attoLine_mergeNext(attoLineNode_t * restrict self, attoLineNode_t ** restri
 	}
 
 	// Allocate more memory for first line
-	void * linemem = realloc(self->line, sizeof(wchar_t) * (self->lineEndx - self->freeSpaceLen + n->lineEndx - n->freeSpaceLen + ATTO_LNODE_DEFAULT_FREE));
+	void * linemem = realloc(
+		self->line,
+		sizeof(wchar_t) * (self->lineEndx - self->freeSpaceLen + n->lineEndx - n->freeSpaceLen + ATTO_LNODE_DEFAULT_FREE)
+	);
 	if (linemem == NULL)
 	{
 		return false;
@@ -207,10 +206,10 @@ bool attoLine_mergeNext(attoLineNode_t * restrict self, attoLineNode_t ** restri
 
 	// Move cursor to end, if needed
 	attoLine_moveCursor(self, (int32_t)self->lineEndx);
-	attoLine_moveCursor(n, (int32_t)n->lineEndx);
+	attoLine_moveCursor(n,    (int32_t)n->lineEndx);
 
 	self->freeSpaceLen = ATTO_LNODE_DEFAULT_FREE;
-	self->lineEndx = self->curx + n->curx + ATTO_LNODE_DEFAULT_FREE;
+	self->lineEndx     = self->curx + n->curx + ATTO_LNODE_DEFAULT_FREE;
 
 	memcpy(self->line + self->curx + self->freeSpaceLen, n->line, sizeof(wchar_t) * n->curx);
 	self->nextNode = n->nextNode;
@@ -218,7 +217,6 @@ bool attoLine_mergeNext(attoLineNode_t * restrict self, attoLineNode_t ** restri
 	{
 		self->nextNode->prevNode = self;
 	}
-
 	attoLine_destroy(n); 
 
 	return true;
@@ -228,17 +226,19 @@ void attoLine_moveCursor(attoLineNode_t * restrict self, int32_t delta)
 {
 	if (delta < 0)
 	{
-		for (; delta < 0 && self->curx > 0; ++delta)
+		for (uint32_t idx = self->curx + self->freeSpaceLen; delta < 0 && self->curx > 0; ++delta)
 		{
-			self->line[self->curx + self->freeSpaceLen - 1] = self->line[self->curx - 1];
+			--idx;
 			--self->curx;
+			self->line[idx] = self->line[self->curx];
 		}
 	}
 	else
 	{
-		for (uint32_t total = self->lineEndx - self->freeSpaceLen; delta > 0 && self->curx < total; --delta)
+		for (uint32_t total = self->lineEndx - self->freeSpaceLen, idx = self->curx + self->freeSpaceLen; delta > 0 && self->curx < total; --delta)
 		{
-			self->line[self->curx] = self->line[self->curx + self->freeSpaceLen];
+			self->line[self->curx] = self->line[idx];
+			++idx;
 			++self->curx;
 		}
 	}
@@ -254,6 +254,20 @@ void attoLine_destroy(attoLineNode_t * restrict self)
 	free(self);
 }
 
+void attoFile_reset(attoFile_t * restrict self)
+{
+	(*self) = (attoFile_t){
+		.fileName = NULL,
+		.hFile    = INVALID_HANDLE_VALUE,
+		.canWrite = false,
+		.data     = {
+			.firstNode   = NULL,
+			.currentNode = NULL,
+			.pcury       = NULL,
+			.curx        = 0
+		}
+	};
+}
 bool attoFile_open(attoFile_t * restrict self, const wchar_t * restrict fileName, bool writemode)
 {
 	if (fileName == NULL)
@@ -293,10 +307,10 @@ void attoFile_close(attoFile_t * restrict self)
 }
 void attoFile_clearLines(attoFile_t * restrict self)
 {
-	attoLineNode_t * node = self->data.firstNode;
-	self->data.firstNode = NULL;
+	attoLineNode_t * node  = self->data.firstNode;
+	self->data.firstNode   = NULL;
 	self->data.currentNode = NULL;
-	self->data.pcury = NULL;
+	self->data.pcury       = NULL;
 	if (node == NULL)
 	{
 		return;
@@ -316,17 +330,14 @@ const wchar_t * attoFile_read(attoFile_t * restrict self)
 	}
 
 	// Clear lines
-
 	attoFile_clearLines(self);
-
-	// Read file contents
 
 	// Get file size
 	DWORD fileSize = GetFileSize(self->hFile, NULL);
 	writeProfiler("attoFile_read", "Opened file with size of %u bytes", fileSize);
 
 	// Alloc array
-	char * bytes = malloc((fileSize + 1) * sizeof(char));
+	char * bytes = malloc(fileSize + 1);
 	if (bytes == NULL)
 	{
 		return L"Memory error!";
@@ -347,10 +358,9 @@ const wchar_t * attoFile_read(attoFile_t * restrict self)
 	}
 	bytes[fileSize] = '\0';
 	++fileSize;
-	// Move file pointer back to beginning
 
 	// Convert to UTF-16
-	wchar_t * utf16;
+	wchar_t * utf16 = NULL;
 	uint32_t chars = atto_convToUnicode(bytes, (int)fileSize, &utf16, NULL);
 	free(bytes);
 
@@ -363,7 +373,7 @@ const wchar_t * attoFile_read(attoFile_t * restrict self)
 	// Free loaded file memory
 
 	// Save lines to structure
-	wchar_t ** lines;
+	wchar_t ** lines = NULL;
 	uint32_t numLines = atto_strnToLines(utf16, chars, &lines);
 	if (lines == NULL)
 	{
@@ -409,10 +419,7 @@ const wchar_t * attoFile_read(attoFile_t * restrict self)
 		}
 		self->data.currentNode = node;
 	}
-
-	// Free lines arr
 	free(lines);
-	// Free UTF-16 converted string
 	free(utf16);
 
 	return NULL;
@@ -502,13 +509,11 @@ int attoFile_write(attoFile_t * restrict self)
 
 		node = node->nextNode;
 	}
-
 	free(line);
 
 	writeProfiler("attoFile_write", "All file contents (%u): \"%S\"", linesLen, lines);
 
 	// Try to convert lines string to UTF-8
-
 	char * utf8 = NULL;
 	uint32_t utf8sz = 0;
 	atto_convFromUnicode(lines, (int)linesLen, &utf8, &utf8sz);
@@ -516,8 +521,7 @@ int attoFile_write(attoFile_t * restrict self)
 	// Free UTF-16 lines string
 	free(lines);
 
-	// Error-check for conversion
-	
+	// Error-check conversion
 	if (utf8 == NULL)
 	{
 		attoFile_close(self);
@@ -539,10 +543,8 @@ int attoFile_write(attoFile_t * restrict self)
 
 	// Close file
 	attoFile_close(self);
-
 	// Free utf8 string
 	free(utf8);
-
 	// Do error checking
 	if (!res)
 	{
@@ -554,7 +556,7 @@ int attoFile_write(attoFile_t * restrict self)
 		return (int)dwWritten;
 	}
 }
-void attoFile_setConTitle(attoFile_t * restrict self)
+void attoFile_setConTitle(const attoFile_t * restrict self)
 {
 	wchar_t wndName[MAX_PATH];
 	size_t fnamelen = wcslen(self->fileName);
@@ -787,9 +789,6 @@ void attoFile_updateCury(attoFile_t * restrict self, uint32_t height)
 
 void attoFile_destruct(attoFile_t * restrict self)
 {
-	if (self->fileName != NULL && self->hFile != INVALID_HANDLE_VALUE)
-	{
-		CloseHandle(self->hFile);
-		self->hFile = INVALID_HANDLE_VALUE;
-	}
+	attoFile_close(self);
+	attoFile_clearLines(self);
 }

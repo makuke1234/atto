@@ -22,7 +22,7 @@ typedef struct attoLineNode_t
 	struct attoLineNode_t * prevNode, * nextNode;
 } attoLineNode_t;
 
-attoLineNode_t * attoLine_create(attoLineNode_t * curnode, attoLineNode_t * nextnode);
+attoLineNode_t * attoLine_create(attoLineNode_t * restrict curnode, attoLineNode_t * restrict nextnode);
 attoLineNode_t * attoLine_createText(
 	attoLineNode_t * restrict curnode,
 	attoLineNode_t * restrict nextnode,
@@ -54,6 +54,7 @@ typedef struct attoFile_t
 	} data;
 } attoFile_t;
 
+void attoFile_reset(attoFile_t * restrict self);
 bool attoFile_open(attoFile_t * restrict self, const wchar_t * restrict selfName, bool writemode);
 void attoFile_close(attoFile_t * restrict self);
 void attoFile_clearLines(attoFile_t * restrict self);
@@ -66,9 +67,8 @@ enum attoFile_writeRes
 	writeRes_writeError = -3,
 	writeRes_memError   = -4
 };
-
 int attoFile_write(attoFile_t * restrict self);
-void attoFile_setConTitle(attoFile_t * restrict self);
+void attoFile_setConTitle(const attoFile_t * restrict self);
 
 bool attoFile_addNormalCh(attoFile_t * restrict self, wchar_t ch);
 bool attoFile_addSpecialCh(attoFile_t * restrict self, wchar_t ch);

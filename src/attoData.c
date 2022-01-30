@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-bool attoDS_init(attoData_t * restrict self)
+bool attoData_init(attoData_t * restrict self)
 {
 	self->conIn  = GetStdHandle(STD_INPUT_HANDLE);
 	self->conOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -53,7 +53,7 @@ bool attoDS_init(attoData_t * restrict self)
 
 	return true;
 }
-void attoDS_refresh(attoData_t * restrict self)
+void attoData_refresh(attoData_t * restrict self)
 {
 	atto_updateScrbuf();
 	DWORD dwBytes;
@@ -65,7 +65,7 @@ void attoDS_refresh(attoData_t * restrict self)
 		&dwBytes
 	);
 }
-void attoDS_refreshAll(attoData_t * restrict self)
+void attoData_refreshAll(attoData_t * restrict self)
 {
 	atto_updateScrbuf();
 	DWORD dwBytes;
@@ -77,9 +77,9 @@ void attoDS_refreshAll(attoData_t * restrict self)
 		&dwBytes
 	);
 }
-void attoDS_statusDraw(attoData_t * restrict self, const wchar_t * message)
+void attoData_statusDraw(attoData_t * restrict self, const wchar_t * message)
 {
-	size_t len = wcslen(message), effLen = (len > self->scrbuf.w) ? (size_t)self->scrbuf.w : len;
+	uint32_t effLen = u32Min((uint32_t)wcslen(message), self->scrbuf.w);
 	wchar_t * restrict lastLine = self->scrbuf.mem + (self->scrbuf.h - 1) * self->scrbuf.w;
 	memcpy(
 		lastLine,
@@ -90,9 +90,9 @@ void attoDS_statusDraw(attoData_t * restrict self, const wchar_t * message)
 	{
 		lastLine[i] = L' ';
 	}
-	attoDS_statusRefresh(self);
+	attoData_statusRefresh(self);
 }
-void attoDS_statusRefresh(attoData_t * restrict self)
+void attoData_statusRefresh(attoData_t * restrict self)
 {
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
@@ -104,14 +104,14 @@ void attoDS_statusRefresh(attoData_t * restrict self)
 	);
 }
 
-void attoDS_destruct(attoData_t * restrict self)
+void attoData_destruct(attoData_t * restrict self)
 {
-	if (self->scrbuf.mem)
+	if (self->scrbuf.mem != NULL)
 	{
 		free(self->scrbuf.mem);
 		self->scrbuf.mem = NULL;
 	}
-	if (self->scrbuf.handle)
+	if (self->scrbuf.handle != INVALID_HANDLE_VALUE)
 	{
 		SetConsoleActiveScreenBuffer(self->conOut);
 	}

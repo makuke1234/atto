@@ -50,6 +50,7 @@ Currently a fixed number of features is supported:
 * 1.5
 	* Add extra warnings to compilation, adjust code accordingly
 	* Update `restrict`-correctness
+	* Remove unnecessary `const`-madness
 * 1.4
 	* Fix memory leak in Unicode conversion functions, if input string is empty
 * 1.3

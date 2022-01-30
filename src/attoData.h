@@ -6,8 +6,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MAX_STATUS 256
-
 typedef struct attoData_t
 {
 	HANDLE conIn, conOut;
@@ -20,12 +18,12 @@ typedef struct attoData_t
 	COORD cursorpos;
 } attoData_t;
 
-bool attoDS_init(attoData_t * restrict self);
-void attoDS_refresh(attoData_t * restrict self);
-void attoDS_refreshAll(attoData_t * restrict self);
-void attoDS_statusDraw(attoData_t * restrict self, const wchar_t * message);
-void attoDS_statusRefresh(attoData_t * restrict self);
+bool attoData_init(attoData_t * restrict self);
+void attoData_refresh(attoData_t * restrict self);
+void attoData_refreshAll(attoData_t * restrict self);
+void attoData_statusDraw(attoData_t * restrict self, const wchar_t * message);
+void attoData_statusRefresh(attoData_t * restrict self);
 
-void attoDS_destruct(attoData_t * restrict self);
+void attoData_destruct(attoData_t * restrict self);
 
 #endif

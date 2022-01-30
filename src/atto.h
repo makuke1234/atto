@@ -9,13 +9,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define MAX_STATUS 256
 
 extern attoFile_t file;
 extern attoData_t editor;
 
 
-bool boolGet(uint8_t * arr, const size_t index);
-void boolPut(uint8_t * arr, const size_t index, const bool value);
+bool boolGet(uint8_t * restrict arr, size_t index);
+void boolPut(uint8_t * restrict arr, size_t index, bool value);
 
 int32_t i32Min(int32_t a, int32_t b);
 int32_t i32Max(int32_t a, int32_t b);
@@ -25,8 +26,8 @@ uint32_t u32Max(uint32_t a, uint32_t b);
 
 void atto_exitHandler(void);
 
-const wchar_t * atto_getFileName(const int argc, const wchar_t * const * const argv);
-void atto_printHelp(const wchar_t * app);
+const wchar_t * atto_getFileName(int argc, const wchar_t * const * const argv);
+void atto_printHelp(const wchar_t * restrict app);
 
 enum attoErr
 {
