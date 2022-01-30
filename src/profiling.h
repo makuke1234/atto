@@ -3,9 +3,7 @@
 
 #if PROFILING_ENABLE == 1
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <time.h>
+#include "common.h"
 
 void initProfiler(void);
 void writeProfiler(const char * restrict function, const char * restrict format, ...);

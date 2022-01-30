@@ -2,7 +2,8 @@
 
 #if PROFILING_ENABLE == 1
 
-#include <stdlib.h>
+#include <time.h>
+#include <stdarg.h>
 
 static FILE * profilingFile = NULL;
 

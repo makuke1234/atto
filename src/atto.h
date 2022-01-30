@@ -6,7 +6,6 @@
 
 #define MAX_STATUS 256
 
-
 bool boolGet(uint8_t * restrict arr, size_t index);
 void boolPut(uint8_t * restrict arr, size_t index, bool value);
 

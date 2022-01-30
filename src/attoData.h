@@ -4,6 +4,7 @@
 #include "common.h"
 #include "attoFile.h"
 
+
 typedef struct attoData_t
 {
 	HANDLE conIn, conOut;

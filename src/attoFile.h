@@ -3,9 +3,6 @@
 
 #include "common.h"
 
-#include <stdint.h>
-#include <stdbool.h>
-
 #define ATTO_LNODE_DEFAULT_FREE 10
 
 /*
