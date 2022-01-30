@@ -53,6 +53,9 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
+* 1.7
+	* Eliminate global variables
+	* Self-document code in the header files
 * 1.6
 	* Add minor check in input loop
 	* Fix bug with cursor not showing properly on very long lines

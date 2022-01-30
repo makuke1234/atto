@@ -2,12 +2,7 @@
 #define ATTO_H
 
 #include "common.h"
-#include "attoFile.h"
 #include "attoData.h"
-
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
 
 #define MAX_STATUS 256
 

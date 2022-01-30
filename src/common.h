@@ -5,13 +5,12 @@
 #define WIN32_EXTRA_LEAN
 #define NOMINMAX
 
-#ifndef UNICODE
-	#define UNICODE
-#endif
-#ifndef _UNICODE
-	#define _UNICODE
-#endif
-
 #include <windows.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <stdint.h>
+#include <assert.h>
 
 #endif

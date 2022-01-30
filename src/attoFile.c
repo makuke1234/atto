@@ -2,7 +2,6 @@
 #include "atto.h"
 #include "profiling.h"
 
-#include <stdlib.h>
 
 attoLineNode_t * attoLine_create(attoLineNode_t * restrict curnode, attoLineNode_t * restrict nextnode)
 {
@@ -322,53 +321,62 @@ void attoFile_clearLines(attoFile_t * restrict self)
 		node = next;
 	}
 }
-const wchar_t * attoFile_read(attoFile_t * restrict self)
+const wchar_t * attoFile_readBytes(attoFile_t * restrict self, char ** bytes, uint32_t * bytesLen)
 {
+	assert(bytesLen != NULL && "Pointer to length variable is mandatory!");
 	if (attoFile_open(self, NULL, false) == false)
 	{
-		return L"File opening error!\n";
+		return L"File opening error!";
 	}
-
-	// Clear lines
-	attoFile_clearLines(self);
-
-	// Get file size
 	DWORD fileSize = GetFileSize(self->hFile, NULL);
-	writeProfiler("attoFile_read", "Opened file with size of %u bytes", fileSize);
-
-	// Alloc array
-	char * bytes = malloc(fileSize + 1);
-	if (bytes == NULL)
+	if ((fileSize >= *bytesLen) || (*bytes == NULL))
 	{
-		return L"Memory error!";
+		void * mem = realloc(*bytes, fileSize + 1);
+		if (mem == NULL)
+		{
+			return L"Memory error!";
+		}
+		*bytes    = mem;
+		*bytesLen = fileSize + 1;
 	}
+
 	BOOL readFileRes = ReadFile(
 		self->hFile,
-		bytes,
+		*bytes,
 		fileSize,
 		NULL,
 		NULL
 	);
 	attoFile_close(self);
-
 	if (!readFileRes)
 	{
-		free(bytes);
 		return L"File read error!";
 	}
-	bytes[fileSize] = '\0';
-	++fileSize;
+	// Add null terminator
+	(*bytes)[fileSize] = '\0';
+
+	return NULL;
+}
+const wchar_t * attoFile_read(attoFile_t * restrict self)
+{
+	char * bytes = NULL;
+	uint32_t size;
+	const wchar_t * res;
+	if ((res = attoFile_readBytes(self, &bytes, &size)) != NULL)
+	{
+		return res;
+	}
 
 	// Convert to UTF-16
 	wchar_t * utf16 = NULL;
-	uint32_t chars = atto_convToUnicode(bytes, (int)fileSize, &utf16, NULL);
+	uint32_t chars = atto_convToUnicode(bytes, (int)size, &utf16, NULL);
 	free(bytes);
 
 	if (utf16 == NULL)
 	{
 		return L"Unicode conversion error!";
 	}
-	writeProfiler("attoFile_read", "Converted %u bytes of character to %u UTF-16 characters.", fileSize, chars);
+	writeProfiler("attoFile_read", "Converted %u bytes of character to %u UTF-16 characters.", size, chars);
 	writeProfiler("attoFile_read", "File UTF-16 contents \"%S\"", utf16);
 
 	// Convert tabs to spaces
@@ -428,21 +436,7 @@ const wchar_t * attoFile_read(attoFile_t * restrict self)
 }
 int attoFile_write(attoFile_t * restrict self)
 {
-	if (attoFile_open(self, NULL, true) == false)
-	{
-		return writeRes_openError;
-	}
-
-	if (self->canWrite == false)
-	{
-		attoFile_close(self);
-		return writeRes_writeError;
-	}
-
-	writeProfiler("attoFile_write", "Opened file for writing");
-
-	// Save to file here
-
+	// Generate lines
 	wchar_t * lines = NULL, * line = NULL;
 	uint32_t linesCap = 0, linesLen = 0, lineCap = 0;
 
@@ -518,7 +512,7 @@ int attoFile_write(attoFile_t * restrict self)
 	// Try to convert lines string to UTF-8
 	char * utf8 = NULL;
 	uint32_t utf8sz = 0;
-	atto_convFromUnicode(lines, (int)linesLen, &utf8, &utf8sz);
+	atto_convFromUnicode(lines, (int)linesLen + 1, &utf8, &utf8sz);
 
 	// Free UTF-16 lines string
 	free(lines);
@@ -526,27 +520,63 @@ int attoFile_write(attoFile_t * restrict self)
 	// Error-check conversion
 	if (utf8 == NULL)
 	{
-		attoFile_close(self);
 		return writeRes_memError;
 	}
 
 	writeProfiler("attoFile_write", "Converted UTF-16 string to UTF-8 string");
 	writeProfiler("attoFile_write", "UTF-8 contents: \"%s\"", utf8);
 
+	// Check if anything has changed, for that load original file again
+	char * compFile = NULL;
+	uint32_t compSize;
+	if (attoFile_readBytes(self, &compFile, &compSize) == NULL)
+	{
+		// Reading was successful
+		writeProfiler("attoFile_write", "Comparing strings: \"%s\" and \"%s\" with sizes %u and %u", utf8, compFile, utf8sz, compSize);
+
+		bool areEqual = strncmp(utf8, compFile, (size_t)u32Min(utf8sz, compSize)) == 0;
+		free(compFile);
+
+		writeProfiler("attoFile_write", "The strings in question are %s", areEqual ? "equal" : "not equal");
+
+		if (areEqual)
+		{
+			// Free all resources before returning
+			free(utf8);
+			return writeRes_nothingNew;
+		}
+	}
+
+	// Try to open file for writing
+	if (attoFile_open(self, NULL, true) == false)
+	{
+		return writeRes_openError;
+	}
+
+	if (self->canWrite == false)
+	{
+		attoFile_close(self);
+		return writeRes_writeError;
+	}
+
+	writeProfiler("attoFile_write", "Opened file for writing");
+
 	// Try to write UTF-8 lines string to file
 	DWORD dwWritten;
+
+	// Write everything except the null terminator
 	BOOL res = WriteFile(
 		self->hFile,
 		utf8,
-		utf8sz,
+		utf8sz - 1,
 		&dwWritten,
 		NULL
 	);
-
 	// Close file
 	attoFile_close(self);
 	// Free utf8 string
 	free(utf8);
+
 	// Do error checking
 	if (!res)
 	{

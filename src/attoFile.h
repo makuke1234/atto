@@ -58,6 +58,7 @@ void attoFile_reset(attoFile_t * restrict self);
 bool attoFile_open(attoFile_t * restrict self, const wchar_t * restrict selfName, bool writemode);
 void attoFile_close(attoFile_t * restrict self);
 void attoFile_clearLines(attoFile_t * restrict self);
+const wchar_t * attoFile_readBytes(attoFile_t * restrict self, char ** bytes, uint32_t * bytesLen);
 const wchar_t * attoFile_read(attoFile_t * restrict self);
 
 enum attoFile_writeRes

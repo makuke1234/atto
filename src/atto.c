@@ -1,18 +1,16 @@
 #include "atto.h"
 #include "profiling.h"
 
-#include <stdlib.h>
-#include <string.h>
 
 bool boolGet(uint8_t * restrict arr, size_t index)
 {
-	return (arr[index / 8] >> (index % 8)) & 0x01;
+	return (arr[index / 8] & (0x01 << (index % 8))) != 0;
 }
 void boolPut(uint8_t * restrict arr, size_t index, bool value)
 {
 	const size_t in1 = index / 8;
-	const uint8_t pattern = 0x01 << (index - (8 * in1));
-	(value) ? (arr[in1] |= pattern) : (arr[in1] &= (uint8_t)~pattern);
+	const uint8_t pattern = 0x01 << (index % 8);
+	value ? (arr[in1] |= pattern) : (arr[in1] &= (uint8_t)~pattern);
 }
 
 int32_t i32Min(int32_t a, int32_t b)
@@ -51,9 +49,7 @@ const wchar_t * atto_getFileName(int argc, const wchar_t * const * const argv)
 }
 void atto_printHelp(const wchar_t * restrict app)
 {
-	puts("Correct usage:");
-	fputws(app, stdout);
-	puts(" [file]");
+	fwprintf(stderr, L"Correct usage:\n%S [file]\n", app);
 }
 
 static const char * atto_errCodes[attoE_num_of_elems] = {
@@ -393,6 +389,7 @@ uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char
 		NULL,
 		NULL
 	);
+
 	// Alloc mem
 	if (sz != NULL && *sz < size)
 	{

@@ -1,8 +1,6 @@
 #include "attoData.h"
 #include "atto.h"
 
-#include <stdlib.h>
-
 
 void attoData_reset(attoData_t * restrict self)
 {
