@@ -8,6 +8,7 @@ Yet another text editor ought to be as simple/small as possible (following the K
 it's designed to be used solely on Microsoft Windows (relies on Win32 API). MinGW-32 GCC has been used as the compiler.
 
 Currently, my other tool [slocWin32](https://github.com/makuke1234/slocWin32) reports 1505 lines of code for this editor:
+
 ![SLOC](./images/sloc.png)
 
 With profiling removed it amount to only **1428** lines of code! Very small indeed...
