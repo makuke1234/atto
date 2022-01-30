@@ -8,7 +8,7 @@
 
 #define MAX_STATUS 256
 
-typedef struct attoData
+typedef struct attoData_t
 {
 	HANDLE conIn, conOut;
 	struct
@@ -18,14 +18,14 @@ typedef struct attoData
 		uint32_t w, h;
 	} scrbuf;
 	COORD cursorpos;
-} attoData;
+} attoData_t;
 
-bool attoDS_init(attoData * restrict ds);
-void attoDS_refresh(attoData * restrict ds);
-void attoDS_refreshAll(attoData * restrict ds);
-void attoDS_statusDraw(attoData * restrict ds, const wchar_t * message);
-void attoDS_statusRefresh(attoData * restrict ds);
+bool attoDS_init(attoData_t * restrict self);
+void attoDS_refresh(attoData_t * restrict self);
+void attoDS_refreshAll(attoData_t * restrict self);
+void attoDS_statusDraw(attoData_t * restrict self, const wchar_t * message);
+void attoDS_statusRefresh(attoData_t * restrict self);
 
-void attoDS_destruct(attoData * restrict ds);
+void attoDS_destruct(attoData_t * restrict self);
 
 #endif

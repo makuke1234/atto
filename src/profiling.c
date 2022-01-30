@@ -4,7 +4,7 @@
 
 static FILE * profilingFile;
 
-void initProfiler()
+void initProfiler(void)
 {
 	profilingFile = fopen("profiler.txt", "a+");
 	fputs("\n", profilingFile);
@@ -43,7 +43,7 @@ void writeProfiler(const char * function, const char * format, ...)
 static clock_t profilerStack[PROFILER_STACK_SIZE];
 static int curStackLen = 0;
 
-void profilerStart()
+void profilerStart(void)
 {
 	if (curStackLen < PROFILER_STACK_SIZE)
 	{

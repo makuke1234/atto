@@ -10,20 +10,20 @@
 #include <stdbool.h>
 
 
-extern attoFile file;
-extern attoData editor;
+extern attoFile_t file;
+extern attoData_t editor;
 
 
 bool boolGet(uint8_t * arr, const size_t index);
 void boolPut(uint8_t * arr, const size_t index, const bool value);
 
 int32_t i32Min(int32_t a, int32_t b);
-int32_t i32Min(int32_t a, int32_t b);
+int32_t i32Max(int32_t a, int32_t b);
 uint32_t u32Min(uint32_t a, uint32_t b);
 uint32_t u32Max(uint32_t a, uint32_t b);
 
 
-void atto_exitHandler();
+void atto_exitHandler(void);
 
 const wchar_t * atto_getFileName(const int argc, const wchar_t * const * const argv);
 void atto_printHelp(const wchar_t * app);
@@ -37,12 +37,12 @@ enum attoErr
 	attoE_num_of_elems
 };
 void atto_printErr(enum attoErr errCode);
-bool atto_loop();
-void atto_updateScrbuf();
+bool atto_loop(void);
+void atto_updateScrbuf(void);
 
 
-uint32_t atto_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, uint32_t * sz);
-uint32_t atto_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8, uint32_t * sz);
-uint32_t atto_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines);
+uint32_t atto_convToUnicode(const char * restrict utf8, int numBytes, wchar_t ** restrict putf16, uint32_t * restrict sz);
+uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char ** restrict putf8, uint32_t * restrict sz);
+uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** restrict lines);
 
 #endif

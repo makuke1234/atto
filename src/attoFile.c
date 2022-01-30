@@ -4,9 +4,9 @@
 
 #include <stdlib.h>
 
-attoLineNode * attoLine_create(attoLineNode * curnode, attoLineNode * nextnode)
+attoLineNode_t * attoLine_create(attoLineNode_t * curnode, attoLineNode_t * nextnode)
 {
-	attoLineNode * node = malloc(sizeof(attoLineNode));
+	attoLineNode_t * node = malloc(sizeof(attoLineNode_t));
 	if (node == NULL)
 	{
 		return NULL;
@@ -57,10 +57,10 @@ attoLineNode * attoLine_create(attoLineNode * curnode, attoLineNode * nextnode)
 	return node;
 }
 
-attoLineNode * attoLine_createText(
-	attoLineNode * curnode,
-	attoLineNode * nextnode,
-	const wchar_t * lineText,
+attoLineNode_t * attoLine_createText(
+	attoLineNode_t * restrict curnode,
+	attoLineNode_t * restrict nextnode,
+	const wchar_t * restrict lineText,
 	int32_t mText
 )
 {
@@ -74,7 +74,7 @@ attoLineNode * attoLine_createText(
 		maxText = (uint32_t)mText;
 	}
 
-	attoLineNode * node = malloc(sizeof(attoLineNode));
+	attoLineNode_t * node = malloc(sizeof(attoLineNode_t));
 	if (node == NULL)
 	{
 		return NULL;
@@ -106,13 +106,13 @@ attoLineNode * attoLine_createText(
 	return node;
 }
 
-bool attoLNode_getText(const attoLineNode * node, wchar_t ** text, uint32_t * tarrsz)
+bool attoLine_getText(const attoLineNode_t * restrict self, wchar_t ** restrict text, uint32_t * restrict tarrsz)
 {
 	if (text == NULL)
 	{
 		return false;
 	}
-	uint32_t totalLen = node->lineEndx - node->freeSpaceLen + 1;
+	uint32_t totalLen = self->lineEndx - self->freeSpaceLen + 1;
 
 	if (tarrsz != NULL && *tarrsz < totalLen)
 	{
@@ -134,15 +134,15 @@ bool attoLNode_getText(const attoLineNode * node, wchar_t ** text, uint32_t * ta
 	}
 
 	wchar_t * t = *text;
-	for (uint32_t i = 0; i < node->lineEndx;)
+	for (uint32_t i = 0; i < self->lineEndx;)
 	{
-		if (i == node->curx)
+		if (i == self->curx)
 		{
-			i += node->freeSpaceLen;
+			i += self->freeSpaceLen;
 			continue;
 		}
 
-		*t = node->line[i];
+		*t = self->line[i];
 		++t;
 
 		++i;
@@ -153,116 +153,116 @@ bool attoLNode_getText(const attoLineNode * node, wchar_t ** text, uint32_t * ta
 	return true;
 }
 
-bool attoLNode_realloc(attoLineNode * restrict curnode)
+bool attoLine_realloc(attoLineNode_t * restrict self)
 {
-	if (curnode->freeSpaceLen == ATTO_LNODE_DEFAULT_FREE)
+	if (self->freeSpaceLen == ATTO_LNODE_DEFAULT_FREE)
 	{
 		return true;
 	}
-	uint32_t totalLen = curnode->lineEndx - curnode->freeSpaceLen;
-	void * newmem = realloc(curnode->line, sizeof(wchar_t) * (totalLen + ATTO_LNODE_DEFAULT_FREE));
+	uint32_t totalLen = self->lineEndx - self->freeSpaceLen;
+	void * newmem = realloc(self->line, sizeof(wchar_t) * (totalLen + ATTO_LNODE_DEFAULT_FREE));
 	if (newmem == NULL)
 	{
 		return false;
 	}
 
-	curnode->line = newmem;
+	self->line = newmem;
 
-	if (curnode->curx != totalLen)
+	if (self->curx != totalLen)
 	{
 		memmove(
-			curnode->line + curnode->curx + ATTO_LNODE_DEFAULT_FREE,
-			curnode->line + curnode->curx + curnode->freeSpaceLen,
-			sizeof(wchar_t) * (totalLen - curnode->curx - curnode->freeSpaceLen)
+			self->line + self->curx + ATTO_LNODE_DEFAULT_FREE,
+			self->line + self->curx + self->freeSpaceLen,
+			sizeof(wchar_t) * (totalLen - self->curx - self->freeSpaceLen)
 		);
 	}
 
-	curnode->lineEndx     = totalLen + ATTO_LNODE_DEFAULT_FREE;
-	curnode->freeSpaceLen = ATTO_LNODE_DEFAULT_FREE;
+	self->lineEndx     = totalLen + ATTO_LNODE_DEFAULT_FREE;
+	self->freeSpaceLen = ATTO_LNODE_DEFAULT_FREE;
 
 	return true;
 }
 
-bool attoLNode_merge(attoLineNode * restrict node, attoLineNode ** restrict ppcury)
+bool attoLine_mergeNext(attoLineNode_t * restrict self, attoLineNode_t ** restrict ppcury)
 {
-	if (node->nextNode == NULL)
+	if (self->nextNode == NULL)
 	{
 		return false;
 	}
 	
-	attoLineNode * restrict n = node->nextNode;
+	attoLineNode_t * restrict n = self->nextNode;
 
 	if (*ppcury == n)
 	{
-		*ppcury = node;
+		*ppcury = self;
 	}
 
 	// Allocate more memory for first line
-	void * linemem = realloc(node->line, sizeof(wchar_t) * (node->lineEndx - node->freeSpaceLen + n->lineEndx - n->freeSpaceLen + ATTO_LNODE_DEFAULT_FREE));
+	void * linemem = realloc(self->line, sizeof(wchar_t) * (self->lineEndx - self->freeSpaceLen + n->lineEndx - n->freeSpaceLen + ATTO_LNODE_DEFAULT_FREE));
 	if (linemem == NULL)
 	{
 		return false;
 	}
-	node->line = linemem;
+	self->line = linemem;
 
 	// Move cursor to end, if needed
-	attoLNode_moveCursor(node, (int32_t)node->lineEndx);
-	attoLNode_moveCursor(n, (int32_t)n->lineEndx);
+	attoLine_moveCursor(self, (int32_t)self->lineEndx);
+	attoLine_moveCursor(n, (int32_t)n->lineEndx);
 
-	node->freeSpaceLen = ATTO_LNODE_DEFAULT_FREE;
-	node->lineEndx = node->curx + n->curx + ATTO_LNODE_DEFAULT_FREE;
+	self->freeSpaceLen = ATTO_LNODE_DEFAULT_FREE;
+	self->lineEndx = self->curx + n->curx + ATTO_LNODE_DEFAULT_FREE;
 
-	memcpy(node->line + node->curx + node->freeSpaceLen, n->line, sizeof(wchar_t) * n->curx);
-	node->nextNode = n->nextNode;
-	if (node->nextNode != NULL)
+	memcpy(self->line + self->curx + self->freeSpaceLen, n->line, sizeof(wchar_t) * n->curx);
+	self->nextNode = n->nextNode;
+	if (self->nextNode != NULL)
 	{
-		node->nextNode->prevNode = node;
+		self->nextNode->prevNode = self;
 	}
 
-	attoLNode_destroy(n); 
+	attoLine_destroy(n); 
 
 	return true;
 }
 
-void attoLNode_moveCursor(attoLineNode * restrict node, int32_t delta)
+void attoLine_moveCursor(attoLineNode_t * restrict self, int32_t delta)
 {
 	if (delta < 0)
 	{
-		for (; delta < 0 && node->curx > 0; ++delta)
+		for (; delta < 0 && self->curx > 0; ++delta)
 		{
-			node->line[node->curx + node->freeSpaceLen - 1] = node->line[node->curx - 1];
-			--node->curx;
+			self->line[self->curx + self->freeSpaceLen - 1] = self->line[self->curx - 1];
+			--self->curx;
 		}
 	}
 	else
 	{
-		for (uint32_t total = node->lineEndx - node->freeSpaceLen; delta > 0 && node->curx < total; --delta)
+		for (uint32_t total = self->lineEndx - self->freeSpaceLen; delta > 0 && self->curx < total; --delta)
 		{
-			node->line[node->curx] = node->line[node->curx + node->freeSpaceLen];
-			++node->curx;
+			self->line[self->curx] = self->line[self->curx + self->freeSpaceLen];
+			++self->curx;
 		}
 	}
 }
 
-void attoLNode_destroy(attoLineNode * restrict node)
+void attoLine_destroy(attoLineNode_t * restrict self)
 {
-	if (node->line != NULL)
+	if (self->line != NULL)
 	{
-		free(node->line);
-		node->line = NULL;
+		free(self->line);
+		self->line = NULL;
 	}
-	free(node);
+	free(self);
 }
 
-bool attoFile_open(attoFile * restrict file, const wchar_t * restrict fileName, bool writemode)
+bool attoFile_open(attoFile_t * restrict self, const wchar_t * restrict fileName, bool writemode)
 {
 	if (fileName == NULL)
 	{
-		fileName = file->fileName;
+		fileName = self->fileName;
 	}
 
 	// try to open file
-	file->hFile = CreateFileW(
+	self->hFile = CreateFileW(
 		fileName,
 		writemode ? GENERIC_WRITE : GENERIC_READ,
 		FILE_SHARE_READ,
@@ -271,58 +271,58 @@ bool attoFile_open(attoFile * restrict file, const wchar_t * restrict fileName, 
 		FILE_ATTRIBUTE_NORMAL,
 		NULL
 	);
-	if (file->hFile == INVALID_HANDLE_VALUE)
+	if (self->hFile == INVALID_HANDLE_VALUE)
 	{
-		file->canWrite = false;
+		self->canWrite = false;
 		return false;
 	}
 	else
 	{
-		file->canWrite = writemode;
-		file->fileName = fileName;
+		self->canWrite = writemode;
+		self->fileName = fileName;
 		return true;
 	}
 }
-void attoFile_close(attoFile * restrict file)
+void attoFile_close(attoFile_t * restrict self)
 {
-	if (file->hFile != INVALID_HANDLE_VALUE)
+	if (self->hFile != INVALID_HANDLE_VALUE)
 	{
-		CloseHandle(file->hFile);
-		file->hFile = INVALID_HANDLE_VALUE;
+		CloseHandle(self->hFile);
+		self->hFile = INVALID_HANDLE_VALUE;
 	}
 }
-void attoFile_clearLines(attoFile * restrict file)
+void attoFile_clearLines(attoFile_t * restrict self)
 {
-	attoLineNode * node = file->data.firstNode;
-	file->data.firstNode = NULL;
-	file->data.currentNode = NULL;
-	file->data.pcury = NULL;
+	attoLineNode_t * node = self->data.firstNode;
+	self->data.firstNode = NULL;
+	self->data.currentNode = NULL;
+	self->data.pcury = NULL;
 	if (node == NULL)
 	{
 		return;
 	}
 	while (node != NULL)
 	{
-		attoLineNode * next = node->nextNode;
-		attoLNode_destroy(node);
+		attoLineNode_t * next = node->nextNode;
+		attoLine_destroy(node);
 		node = next;
 	}
 }
-const wchar_t * attoFile_read(attoFile * restrict file)
+const wchar_t * attoFile_read(attoFile_t * restrict self)
 {
-	if (attoFile_open(file, NULL, false) == false)
+	if (attoFile_open(self, NULL, false) == false)
 	{
 		return L"File opening error!\n";
 	}
 
 	// Clear lines
 
-	attoFile_clearLines(file);
+	attoFile_clearLines(self);
 
 	// Read file contents
 
 	// Get file size
-	DWORD fileSize = GetFileSize(file->hFile, NULL);
+	DWORD fileSize = GetFileSize(self->hFile, NULL);
 	writeProfiler("attoFile_read", "Opened file with size of %u bytes", fileSize);
 
 	// Alloc array
@@ -332,13 +332,13 @@ const wchar_t * attoFile_read(attoFile * restrict file)
 		return L"Memory error!";
 	}
 	BOOL readFileRes = ReadFile(
-		file->hFile,
+		self->hFile,
 		bytes,
 		fileSize,
 		NULL,
 		NULL
 	);
-	attoFile_close(file);
+	attoFile_close(self);
 
 	if (!readFileRes)
 	{
@@ -376,11 +376,11 @@ const wchar_t * attoFile_read(attoFile * restrict file)
 		writeProfiler("attoFile_read", "Line %d: \"%S\"", i, lines[i]);
 	}
 
-	attoFile_clearLines(file);
+	attoFile_clearLines(self);
 	if (numLines == 0)
 	{
-		file->data.firstNode = attoLine_create(NULL, NULL);
-		if (file->data.firstNode == NULL)
+		self->data.firstNode = attoLine_create(NULL, NULL);
+		if (self->data.firstNode == NULL)
 		{
 			free(lines);
 			free(utf16);
@@ -389,25 +389,25 @@ const wchar_t * attoFile_read(attoFile * restrict file)
 	}
 	else
 	{
-		file->data.firstNode = attoLine_createText(NULL, NULL, lines[0], -1);
-		if (file->data.firstNode == NULL)
+		self->data.firstNode = attoLine_createText(NULL, NULL, lines[0], -1);
+		if (self->data.firstNode == NULL)
 		{
 			free(lines);
 			free(utf16);
 			return L"Line creation error!";
 		}
 	}
-	file->data.currentNode = file->data.firstNode;
+	self->data.currentNode = self->data.firstNode;
 	for (uint32_t i = 1; i < numLines; ++i)
 	{
-		attoLineNode * node = attoLine_createText(file->data.currentNode, NULL, lines[i], -1);
+		attoLineNode_t * node = attoLine_createText(self->data.currentNode, NULL, lines[i], -1);
 		if (node == NULL)
 		{
 			free(lines);
 			free(utf16);
 			return L"Line creation error!";
 		}
-		file->data.currentNode = node;
+		self->data.currentNode = node;
 	}
 
 	// Free lines arr
@@ -417,16 +417,16 @@ const wchar_t * attoFile_read(attoFile * restrict file)
 
 	return NULL;
 }
-int attoFile_write(attoFile * restrict file)
+int attoFile_write(attoFile_t * restrict self)
 {
-	if (attoFile_open(file, NULL, true) == false)
+	if (attoFile_open(self, NULL, true) == false)
 	{
 		return writeRes_openError;
 	}
 
-	if (file->canWrite == false)
+	if (self->canWrite == false)
 	{
-		attoFile_close(file);
+		attoFile_close(self);
 		return writeRes_writeError;
 	}
 
@@ -437,11 +437,11 @@ int attoFile_write(attoFile * restrict file)
 	wchar_t * lines = NULL, * line = NULL;
 	uint32_t linesCap = 0, linesLen = 0, lineCap = 0;
 
-	attoLineNode * node = file->data.firstNode;
+	attoLineNode_t * node = self->data.firstNode;
 
 	while (node != NULL)
 	{
-		if (attoLNode_getText(node, &line, &lineCap) == false)
+		if (attoLine_getText(node, &line, &lineCap) == false)
 		{
 			writeProfiler("attoFile_write", "Failed to fetch line!");
 			if (line != NULL)
@@ -520,7 +520,7 @@ int attoFile_write(attoFile * restrict file)
 	
 	if (utf8 == NULL)
 	{
-		attoFile_close(file);
+		attoFile_close(self);
 		return writeRes_memError;
 	}
 
@@ -530,7 +530,7 @@ int attoFile_write(attoFile * restrict file)
 	// Try to write UTF-8 lines string to file
 	DWORD dwWritten;
 	BOOL res = WriteFile(
-		file->hFile,
+		self->hFile,
 		utf8,
 		utf8sz,
 		&dwWritten,
@@ -538,7 +538,7 @@ int attoFile_write(attoFile * restrict file)
 	);
 
 	// Close file
-	attoFile_close(file);
+	attoFile_close(self);
 
 	// Free utf8 string
 	free(utf8);
@@ -554,21 +554,21 @@ int attoFile_write(attoFile * restrict file)
 		return (int)dwWritten;
 	}
 }
-void attoFile_setConTitle(attoFile * restrict file)
+void attoFile_setConTitle(attoFile_t * restrict self)
 {
 	wchar_t wndName[MAX_PATH];
-	size_t fnamelen = wcslen(file->fileName);
-	memcpy(wndName, file->fileName, fnamelen * sizeof(wchar_t));
+	size_t fnamelen = wcslen(self->fileName);
+	memcpy(wndName, self->fileName, fnamelen * sizeof(wchar_t));
 	wcscpy_s(wndName + fnamelen, MAX_PATH - fnamelen, L" - atto");
 	SetConsoleTitleW(wndName);
 }
 
 
-bool attoFile_addNormalCh(attoFile * restrict file, wchar_t ch)
+bool attoFile_addNormalCh(attoFile_t * restrict self, wchar_t ch)
 {
-	attoLineNode * node = file->data.currentNode;
+	attoLineNode_t * node = self->data.currentNode;
 
-	if (node->freeSpaceLen < 1 && !attoLNode_realloc(node))
+	if (node->freeSpaceLen < 1 && !attoLine_realloc(node))
 	{
 		return false;
 	}
@@ -578,14 +578,14 @@ bool attoFile_addNormalCh(attoFile * restrict file, wchar_t ch)
 	--node->freeSpaceLen;
 	return true;
 }
-bool attoFile_addSpecialCh(attoFile * restrict file, wchar_t ch)
+bool attoFile_addSpecialCh(attoFile_t * restrict self, wchar_t ch)
 {
 	switch (ch)
 	{
 	case VK_TAB:
 		for (int i = 0; i < 4; ++i)
 		{
-			if (attoFile_addNormalCh(file, ' ') == false)
+			if (attoFile_addNormalCh(self, ' ') == false)
 			{
 				return false;
 			}
@@ -593,62 +593,62 @@ bool attoFile_addSpecialCh(attoFile * restrict file, wchar_t ch)
 		break;
 	case VK_OEM_BACKTAB:
 		// Check if there's 4 spaces before the caret
-		if (attoFile_checkLineAt(file, -4, L"    ", 4))
+		if (attoFile_checkLineAt(self, -4, L"    ", 4))
 		{
 			for (int i = 0; i < 4; ++i)
 			{
-				attoFile_deleteBackward(file);
+				attoFile_deleteBackward(self);
 			}
 		}
 		// If there isn't, check if there's 4 spaces after the caret
-		else if (attoFile_checkLineAt(file, 0, L"    ", 4))
+		else if (attoFile_checkLineAt(self, 0, L"    ", 4))
 		{
 			for (int i = 0; i < 4; ++i)
 			{
-				attoFile_deleteForward(file);
+				attoFile_deleteForward(self);
 			}
 		}
 		break;
 	case VK_RETURN:	// Enter key
-		attoFile_addNewLine(file);
+		attoFile_addNewLine(self);
 		break;
 	case VK_BACK:	// Backspace
-		attoFile_deleteBackward(file);
+		attoFile_deleteBackward(self);
 		break;
 	case VK_DELETE:	// Delete
-		attoFile_deleteForward(file);
+		attoFile_deleteForward(self);
 		break;
 	// Move cursor
 	case VK_LEFT:	// Left arrow
-		if (file->data.currentNode->curx > 0)
+		if (self->data.currentNode->curx > 0)
 		{
-			attoLNode_moveCursor(file->data.currentNode, -1);
+			attoLine_moveCursor(self->data.currentNode, -1);
 		}
-		else if (file->data.currentNode->prevNode != NULL)
+		else if (self->data.currentNode->prevNode != NULL)
 		{
-			file->data.currentNode = file->data.currentNode->prevNode;
+			self->data.currentNode = self->data.currentNode->prevNode;
 		}
 		break;
 	case VK_RIGHT:	// Right arrow
-		if ((file->data.currentNode->curx + file->data.currentNode->freeSpaceLen) < file->data.currentNode->lineEndx)
+		if ((self->data.currentNode->curx + self->data.currentNode->freeSpaceLen) < self->data.currentNode->lineEndx)
 		{
-			attoLNode_moveCursor(file->data.currentNode, 1);
+			attoLine_moveCursor(self->data.currentNode, 1);
 		}
-		else if (file->data.currentNode->nextNode != NULL)
+		else if (self->data.currentNode->nextNode != NULL)
 		{
-			file->data.currentNode = file->data.currentNode->nextNode;
+			self->data.currentNode = self->data.currentNode->nextNode;
 		}
 		break;
 	case VK_UP:		// Up arrow
-		if (file->data.currentNode->prevNode != NULL)
+		if (self->data.currentNode->prevNode != NULL)
 		{
-			file->data.currentNode = file->data.currentNode->prevNode;
+			self->data.currentNode = self->data.currentNode->prevNode;
 		}
 		break;
 	case VK_DOWN:	// Down arrow
-		if (file->data.currentNode->nextNode != NULL)
+		if (self->data.currentNode->nextNode != NULL)
 		{
-			file->data.currentNode = file->data.currentNode->nextNode;
+			self->data.currentNode = self->data.currentNode->nextNode;
 		}
 		break;
 	default:
@@ -658,9 +658,9 @@ bool attoFile_addSpecialCh(attoFile * restrict file, wchar_t ch)
 	return true;
 }
 
-bool attoFile_checkLineAt(const attoFile * restrict file, int32_t maxdelta, const wchar_t * string, uint32_t maxString)
+bool attoFile_checkLineAt(const attoFile_t * restrict self, int32_t maxdelta, const wchar_t * restrict string, uint32_t maxString)
 {
-	const attoLineNode * restrict node = file->data.currentNode;
+	const attoLineNode_t * restrict node = self->data.currentNode;
 	if (node == NULL)
 	{
 		return false;
@@ -695,9 +695,9 @@ bool attoFile_checkLineAt(const attoFile * restrict file, int32_t maxdelta, cons
 
 	return true;
 }
-bool attoFile_deleteForward(attoFile * restrict file)
+bool attoFile_deleteForward(attoFile_t * restrict self)
 {
-	attoLineNode * node = file->data.currentNode;
+	attoLineNode_t * node = self->data.currentNode;
 	if ((node->curx + node->freeSpaceLen) < node->lineEndx)
 	{
 		++node->freeSpaceLen;
@@ -705,16 +705,16 @@ bool attoFile_deleteForward(attoFile * restrict file)
 	}
 	else if (node->nextNode != NULL)
 	{
-		return attoLNode_merge(node, &file->data.pcury);
+		return attoLine_mergeNext(node, &self->data.pcury);
 	}
 	else
 	{
 		return false;
 	}
 }
-bool attoFile_deleteBackward(attoFile * restrict file)
+bool attoFile_deleteBackward(attoFile_t * restrict self)
 {
-	attoLineNode * node = file->data.currentNode;
+	attoLineNode_t * node = self->data.currentNode;
 	if (node->curx > 0)
 	{
 		--node->curx;
@@ -724,72 +724,72 @@ bool attoFile_deleteBackward(attoFile * restrict file)
 	else if (node->prevNode != NULL)
 	{
 		// Add current node data to previous node data
-		file->data.currentNode = node->prevNode;
-		return attoLNode_merge(file->data.currentNode, &file->data.pcury);
+		self->data.currentNode = node->prevNode;
+		return attoLine_mergeNext(self->data.currentNode, &self->data.pcury);
 	}
 	else
 	{
 		return false;
 	}
 }
-bool attoFile_addNewLine(attoFile * restrict file)
+bool attoFile_addNewLine(attoFile_t * restrict self)
 {
-	attoLineNode * node = attoLine_create(file->data.currentNode, file->data.currentNode->nextNode);
+	attoLineNode_t * node = attoLine_create(self->data.currentNode, self->data.currentNode->nextNode);
 	if (node == NULL)
 	{
 		return false;
 	}
 
-	file->data.currentNode->nextNode = node;
-	file->data.currentNode = node;
+	self->data.currentNode->nextNode = node;
+	self->data.currentNode = node;
 	return true;
 }
 
-void attoFile_updateCury(attoFile * restrict file, uint32_t height)
+void attoFile_updateCury(attoFile_t * restrict self, uint32_t height)
 {
-	if (file->data.pcury == NULL)
+	if (self->data.pcury == NULL)
 	{
-		attoLineNode * node = file->data.currentNode;
+		attoLineNode_t * node = self->data.currentNode;
 		for (uint32_t i = 0; i < height && node->prevNode != NULL; ++i)
 		{
 			node = node->prevNode;
 		}
-		file->data.pcury = node;
+		self->data.pcury = node;
 	}
 	else
 	{
-		attoLineNode * node = file->data.currentNode;
+		attoLineNode_t * node = self->data.currentNode;
 		for (uint32_t i = 0; i < height && node != NULL; ++i)
 		{
-			if (node == file->data.pcury)
+			if (node == self->data.pcury)
 			{
 				return;
 			}
 			node = node->prevNode;
 		}
 
-		node = file->data.currentNode->nextNode;
+		node = self->data.currentNode->nextNode;
 		for (; node != NULL;)
 		{
-			if (node == file->data.pcury)
+			if (node == self->data.pcury)
 			{
-				file->data.pcury = file->data.currentNode;
+				self->data.pcury = self->data.currentNode;
 				return;
 			}
 			node = node->nextNode;
 		}
 
-		file->data.pcury = NULL;
-		attoFile_updateCury(file, height);
+		self->data.pcury = NULL;
+		attoFile_updateCury(self, height);
 	}
 }
 
 
-void attoFile_destruct(attoFile * restrict file)
+void attoFile_destruct(attoFile_t * restrict self)
 {
-	if (file->fileName != NULL && file->hFile != INVALID_HANDLE_VALUE)
+	if (self->fileName != NULL && self->hFile != INVALID_HANDLE_VALUE)
 	{
-		CloseHandle(file->hFile);
-		file->hFile = INVALID_HANDLE_VALUE;
+		CloseHandle(self->hFile);
+		self->hFile = INVALID_HANDLE_VALUE;
 	}
 }

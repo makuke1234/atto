@@ -3,116 +3,116 @@
 
 #include <stdlib.h>
 
-bool attoDS_init(attoData * restrict ds)
+bool attoDS_init(attoData_t * restrict self)
 {
-	ds->conIn  = GetStdHandle(STD_INPUT_HANDLE);
-	ds->conOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	self->conIn  = GetStdHandle(STD_INPUT_HANDLE);
+	self->conOut = GetStdHandle(STD_OUTPUT_HANDLE);
 	// Set exit handler
 	atexit(&atto_exitHandler);
 
 	// Get console current size
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
-	if (!GetConsoleScreenBufferInfo(ds->conOut, &csbi))
+	if (!GetConsoleScreenBufferInfo(self->conOut, &csbi))
 	{
 		return false;
 	}
 
-	ds->scrbuf.w = (uint32_t)(csbi.srWindow.Right  - csbi.srWindow.Left + 1);
-	ds->scrbuf.h = (uint32_t)(csbi.srWindow.Bottom - csbi.srWindow.Top  + 1);
+	self->scrbuf.w = (uint32_t)(csbi.srWindow.Right  - csbi.srWindow.Left + 1);
+	self->scrbuf.h = (uint32_t)(csbi.srWindow.Bottom - csbi.srWindow.Top  + 1);
 	// Create screen buffer
-	ds->scrbuf.handle = CreateConsoleScreenBuffer(
+	self->scrbuf.handle = CreateConsoleScreenBuffer(
 		GENERIC_WRITE,
 		0,
 		NULL,
 		CONSOLE_TEXTMODE_BUFFER,
 		NULL
 	);
-	if (ds->scrbuf.handle == INVALID_HANDLE_VALUE)
+	if (self->scrbuf.handle == INVALID_HANDLE_VALUE)
 	{
 		return false;
 	}
 
-	ds->scrbuf.mem = malloc((size_t)(ds->scrbuf.w * ds->scrbuf.h) * sizeof(wchar_t));
-	if (ds->scrbuf.mem == NULL)
+	self->scrbuf.mem = malloc((size_t)(self->scrbuf.w * self->scrbuf.h) * sizeof(wchar_t));
+	if (self->scrbuf.mem == NULL)
 	{
 		return false;
 	}
 
-	for (uint32_t i = 0, sz = ds->scrbuf.w * ds->scrbuf.h; i < sz; ++i)
+	for (uint32_t i = 0, sz = self->scrbuf.w * self->scrbuf.h; i < sz; ++i)
 	{
-		ds->scrbuf.mem[i] = L' ';
+		self->scrbuf.mem[i] = L' ';
 	}
-	if (!SetConsoleScreenBufferSize(ds->scrbuf.handle, (COORD){ .X = (SHORT)ds->scrbuf.w, .Y = (SHORT)ds->scrbuf.h }))
+	if (!SetConsoleScreenBufferSize(self->scrbuf.handle, (COORD){ .X = (SHORT)self->scrbuf.w, .Y = (SHORT)self->scrbuf.h }))
 	{
 		return false;
 	}
-	if (!SetConsoleActiveScreenBuffer(ds->scrbuf.handle))
+	if (!SetConsoleActiveScreenBuffer(self->scrbuf.handle))
 	{
 		return false;
 	}
 
 	return true;
 }
-void attoDS_refresh(attoData * restrict ds)
+void attoDS_refresh(attoData_t * restrict self)
 {
 	atto_updateScrbuf();
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
-		ds->scrbuf.handle,
-		ds->scrbuf.mem,
-		ds->scrbuf.w * (ds->scrbuf.h - 1),
+		self->scrbuf.handle,
+		self->scrbuf.mem,
+		self->scrbuf.w * (self->scrbuf.h - 1),
 		(COORD){ 0, 0 },
 		&dwBytes
 	);
 }
-void attoDS_refreshAll(attoData * restrict ds)
+void attoDS_refreshAll(attoData_t * restrict self)
 {
 	atto_updateScrbuf();
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
-		ds->scrbuf.handle,
-		ds->scrbuf.mem,
-		ds->scrbuf.w * ds->scrbuf.h,
+		self->scrbuf.handle,
+		self->scrbuf.mem,
+		self->scrbuf.w * self->scrbuf.h,
 		(COORD){ 0, 0 },
 		&dwBytes
 	);
 }
-void attoDS_statusDraw(attoData * restrict ds, const wchar_t * message)
+void attoDS_statusDraw(attoData_t * restrict self, const wchar_t * message)
 {
-	size_t len = wcslen(message), effLen = (len > ds->scrbuf.w) ? (size_t)ds->scrbuf.w : len;
-	wchar_t * restrict lastLine = ds->scrbuf.mem + (ds->scrbuf.h - 1) * ds->scrbuf.w;
+	size_t len = wcslen(message), effLen = (len > self->scrbuf.w) ? (size_t)self->scrbuf.w : len;
+	wchar_t * restrict lastLine = self->scrbuf.mem + (self->scrbuf.h - 1) * self->scrbuf.w;
 	memcpy(
 		lastLine,
 		message,
 		sizeof(wchar_t) * effLen
 	);
-	for (size_t i = effLen; i < ds->scrbuf.w; ++i)
+	for (size_t i = effLen; i < self->scrbuf.w; ++i)
 	{
 		lastLine[i] = L' ';
 	}
-	attoDS_statusRefresh(ds);
+	attoDS_statusRefresh(self);
 }
-void attoDS_statusRefresh(attoData * restrict ds)
+void attoDS_statusRefresh(attoData_t * restrict self)
 {
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
-		ds->scrbuf.handle,
-		ds->scrbuf.mem + (ds->scrbuf.h - 1) * ds->scrbuf.w,
-		ds->scrbuf.w,
-		(COORD){ .X = 0, .Y = (SHORT)(ds->scrbuf.h - 1) },
+		self->scrbuf.handle,
+		self->scrbuf.mem + (self->scrbuf.h - 1) * self->scrbuf.w,
+		self->scrbuf.w,
+		(COORD){ .X = 0, .Y = (SHORT)(self->scrbuf.h - 1) },
 		&dwBytes
 	);
 }
 
-void attoDS_destruct(attoData * restrict ds)
+void attoDS_destruct(attoData_t * restrict self)
 {
-	if (ds->scrbuf.mem)
+	if (self->scrbuf.mem)
 	{
-		free(ds->scrbuf.mem);
-		ds->scrbuf.mem = NULL;
+		free(self->scrbuf.mem);
+		self->scrbuf.mem = NULL;
 	}
-	if (ds->scrbuf.handle)
+	if (self->scrbuf.handle)
 	{
-		SetConsoleActiveScreenBuffer(ds->conOut);
+		SetConsoleActiveScreenBuffer(self->conOut);
 	}
 }

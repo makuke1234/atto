@@ -47,6 +47,9 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
+* 1.5
+	* Add extra warnings to compilation, adjust code accordingly
+	* Update `restrict`-correctness
 * 1.4
 	* Fix memory leak in Unicode conversion functions, if input string is empty
 * 1.3

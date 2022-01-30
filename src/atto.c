@@ -5,8 +5,8 @@
 #include <string.h>
 
 
-attoFile file = { .hFile = INVALID_HANDLE_VALUE };
-attoData editor = { 0 };
+attoFile_t file   = { .hFile = INVALID_HANDLE_VALUE };
+attoData_t editor = { 0 };
 
 bool boolGet(uint8_t * arr, const size_t index)
 {
@@ -38,7 +38,7 @@ uint32_t u32Max(uint32_t a, uint32_t b)
 
 
 
-void atto_exitHandler()
+void atto_exitHandler(void)
 {
 	// Clear resources
 	attoFile_destruct(&file);
@@ -70,7 +70,7 @@ void atto_printErr(enum attoErr errCode)
 	puts(atto_errCodes[errCode]);
 }
 
-bool atto_loop()
+bool atto_loop(void)
 {
 	enum SpecialAsciiCodes
 	{
@@ -241,7 +241,7 @@ bool atto_loop()
 
 	return true;
 }
-void atto_updateScrbuf()
+void atto_updateScrbuf(void)
 {
 	attoFile_updateCury(&file, editor.scrbuf.h - 2);
 	file.data.curx = (uint32_t)i32Max(0, (int32_t)file.data.currentNode->curx - (int32_t)editor.scrbuf.w);
@@ -250,7 +250,7 @@ void atto_updateScrbuf()
 	{
 		editor.scrbuf.mem[i] = L' ';
 	}
-	attoLineNode * node = file.data.pcury;
+	attoLineNode_t * node = file.data.pcury;
 	for (uint32_t i = 0; i < editor.scrbuf.h - 1 && node != NULL; ++i)
 	{
 		// if line is active line
@@ -268,7 +268,7 @@ void atto_updateScrbuf()
 		// Advance idx by file.data.curx
 		uint32_t idx = 0;
 
-		for (uint32_t i = file.data.curx; i > 0 && idx < node->lineEndx;)
+		for (uint32_t j = file.data.curx; j > 0 && idx < node->lineEndx;)
 		{
 			if (idx == node->curx)
 			{
@@ -276,26 +276,26 @@ void atto_updateScrbuf()
 				continue;
 			}
 			++idx;
-			--i;
+			--j;
 		}
 
-		for (uint32_t i = 0; idx < node->lineEndx && i < editor.scrbuf.w;)
+		for (uint32_t j = 0; idx < node->lineEndx && j < editor.scrbuf.w;)
 		{
 			if (idx == node->curx)
 			{
 				idx += node->freeSpaceLen;
 				continue;
 			}
-			destination[i] = node->line[idx];
+			destination[j] = node->line[idx];
 			++idx;
-			++i;
+			++j;
 		}
 
 		node = node->nextNode;
 	}
 }
 
-uint32_t atto_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, uint32_t * sz)
+uint32_t atto_convToUnicode(const char * restrict utf8, int numBytes, wchar_t ** restrict putf16, uint32_t * restrict sz)
 {
 	if (numBytes == 0)
 	{
@@ -355,7 +355,7 @@ uint32_t atto_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, 
 	);
 	return size;
 }
-uint32_t atto_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8, uint32_t * sz)
+uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char ** restrict putf8, uint32_t * restrict sz)
 {
 	if (numChars == 0)
 	{
@@ -420,7 +420,7 @@ uint32_t atto_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8
 	);
 	return size;
 }
-uint32_t atto_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines)
+uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** restrict lines)
 {
 	// Count number of newline characters (to count number of lines - 1)
 	uint32_t newlines = 1;
