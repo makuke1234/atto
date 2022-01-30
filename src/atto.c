@@ -242,7 +242,15 @@ bool atto_loop(void)
 void atto_updateScrbuf(void)
 {
 	attoFile_updateCury(&file, editor.scrbuf.h - 2);
-	file.data.curx = (uint32_t)i32Max(0, (int32_t)file.data.currentNode->curx - (int32_t)editor.scrbuf.w);
+	int32_t delta = (int32_t)file.data.currentNode->curx - (int32_t)editor.scrbuf.w - (int32_t)file.data.curx;
+	if (delta >= 0)
+	{
+		file.data.curx += (uint32_t)(delta + 1);
+	}
+	else if (file.data.curx > file.data.currentNode->curx)
+	{
+		file.data.curx = u32Max(1, file.data.currentNode->curx) - 1;
+	}
 	uint32_t size = editor.scrbuf.w * editor.scrbuf.h;
 	for (uint32_t i = 0; i < size; ++i)
 	{
@@ -256,7 +264,7 @@ void atto_updateScrbuf(void)
 		{
 			// Update cursor position
 			editor.cursorpos.Y = (int16_t)i;
-			editor.cursorpos.X = (int16_t)(node->curx - file.data.curx);
+			editor.cursorpos.X = (int16_t)u32Min(node->curx - file.data.curx, (uint32_t)(editor.scrbuf.w - 1));
 			SetConsoleCursorPosition(editor.scrbuf.handle, editor.cursorpos);
 		}
 		wchar_t * destination = &editor.scrbuf.mem[i * editor.scrbuf.w];
@@ -458,4 +466,53 @@ uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** 
 
 	return newlines;
 }
+uint32_t atto_tabsToSpaces(wchar_t ** restrict str, uint32_t * restrict len)
+{
+	uint32_t realLen;
+	if (len == NULL || *len == 0)
+	{
+		realLen = (uint32_t)wcslen(*str);
+	}
+	else
+	{
+		realLen = *len;
+	}
+	++realLen;
+	uint32_t realCap = realLen;
 
+	// Conversion happens here
+	wchar_t * s = *str;
+
+	for (uint32_t i = 0; i < realLen;)
+	{
+		if (s[i] == L'\t')
+		{
+			if ((realLen + 3) > realCap)
+			{
+				realCap = (realLen + 3) * 2;
+				s = realloc(s, sizeof(wchar_t) * realCap);
+				if (s == NULL)
+				{
+					return 0;
+				}
+			}
+			memmove(&s[i + 3], &s[i], sizeof(wchar_t) * (realLen - i));
+			for (uint32_t j = 0; j < 4; ++i, ++j)
+			{
+				s[i] = L' ';
+			}
+			realLen += 3;
+		}
+		else
+		{
+			++i;
+		}
+	}
+
+	*str = s;
+	if (len != NULL)
+	{
+		*len = realLen;
+	}
+	return realLen;
+}

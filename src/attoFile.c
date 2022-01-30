@@ -370,7 +370,9 @@ const wchar_t * attoFile_read(attoFile_t * restrict self)
 	}
 	writeProfiler("attoFile_read", "Converted %u bytes of character to %u UTF-16 characters.", fileSize, chars);
 	writeProfiler("attoFile_read", "File UTF-16 contents \"%S\"", utf16);
-	// Free loaded file memory
+
+	// Convert tabs to spaces
+	atto_tabsToSpaces(&utf16, &chars);
 
 	// Save lines to structure
 	wchar_t ** lines = NULL;

@@ -47,6 +47,11 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
+* 1.6
+	* Add minor check in input loop
+	* Fix bug with cursor not showing properly on very long lines
+	* Enhance viewpoint adaption
+	* Add tabs-to-spaces automatic conversion
 * 1.5
 	* Add extra warnings to compilation, adjust code accordingly
 	* Update `restrict`-correctness

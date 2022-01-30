@@ -45,5 +45,6 @@ void atto_updateScrbuf(void);
 uint32_t atto_convToUnicode(const char * restrict utf8, int numBytes, wchar_t ** restrict putf16, uint32_t * restrict sz);
 uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char ** restrict putf8, uint32_t * restrict sz);
 uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** restrict lines);
+uint32_t atto_tabsToSpaces(wchar_t ** restrict str, uint32_t * restrict len);
 
 #endif
