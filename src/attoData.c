@@ -3,6 +3,22 @@
 
 #include <stdlib.h>
 
+
+void attoData_reset(attoData_t * restrict self)
+{
+	*self = (attoData_t){
+		.conIn  = INVALID_HANDLE_VALUE,
+		.conOut = INVALID_HANDLE_VALUE,
+		.scrbuf = {
+			.handle = INVALID_HANDLE_VALUE,
+			.mem    = NULL,
+			.w      = 0,
+			.h      = 0
+		},
+		.cursorpos = { 0, 0 }
+	};
+	attoFile_reset(&self->file);
+}
 bool attoData_init(attoData_t * restrict self)
 {
 	self->conIn  = GetStdHandle(STD_INPUT_HANDLE);
@@ -55,7 +71,7 @@ bool attoData_init(attoData_t * restrict self)
 }
 void attoData_refresh(attoData_t * restrict self)
 {
-	atto_updateScrbuf();
+	atto_updateScrbuf(self);
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
 		self->scrbuf.handle,
@@ -67,7 +83,7 @@ void attoData_refresh(attoData_t * restrict self)
 }
 void attoData_refreshAll(attoData_t * restrict self)
 {
-	atto_updateScrbuf();
+	atto_updateScrbuf(self);
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
 		self->scrbuf.handle,
@@ -115,4 +131,5 @@ void attoData_destruct(attoData_t * restrict self)
 	{
 		SetConsoleActiveScreenBuffer(self->conOut);
 	}
+	attoFile_destruct(&self->file);
 }

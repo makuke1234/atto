@@ -11,9 +11,6 @@
 
 #define MAX_STATUS 256
 
-extern attoFile_t file;
-extern attoData_t editor;
-
 
 bool boolGet(uint8_t * restrict arr, size_t index);
 void boolPut(uint8_t * restrict arr, size_t index, bool value);
@@ -23,7 +20,7 @@ int32_t i32Max(int32_t a, int32_t b);
 uint32_t u32Min(uint32_t a, uint32_t b);
 uint32_t u32Max(uint32_t a, uint32_t b);
 
-
+void atto_exitHandlerSetVars(attoData_t * pdata);
 void atto_exitHandler(void);
 
 const wchar_t * atto_getFileName(int argc, const wchar_t * const * const argv);
@@ -38,8 +35,8 @@ enum attoErr
 	attoE_num_of_elems
 };
 void atto_printErr(enum attoErr errCode);
-bool atto_loop(void);
-void atto_updateScrbuf(void);
+bool atto_loop(attoData_t * restrict pdata);
+void atto_updateScrbuf(attoData_t * restrict peditor);
 
 
 uint32_t atto_convToUnicode(const char * restrict utf8, int numBytes, wchar_t ** restrict putf16, uint32_t * restrict sz);

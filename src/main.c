@@ -1,10 +1,13 @@
 #include "atto.h"
 #include "profiling.h"
 
+static attoData_t editor;
 
 int wmain(int argc, const wchar_t * argv[])
 {
-	attoFile_reset(&file);
+	atto_exitHandlerSetVars(&editor);
+
+	attoData_reset(&editor);
 
 	// Initialise profiler, if applicable
 	initProfiler();
@@ -16,15 +19,15 @@ int wmain(int argc, const wchar_t * argv[])
 		return 1;
 	}
 
-	if (!attoFile_open(&file, fileName, false))
+	if (!attoFile_open(&editor.file, fileName, false))
 	{
 		atto_printErr(attoE_file);
 		return 2;
 	}
-	attoFile_close(&file);
+	attoFile_close(&editor.file);
 
 	// Set console title
-	attoFile_setConTitle(&file);
+	attoFile_setConTitle(&editor.file);
 
 	if (!attoData_init(&editor))
 	{
@@ -34,13 +37,13 @@ int wmain(int argc, const wchar_t * argv[])
 
 	const wchar_t * res;
 	writeProfiler("wmain", "Starting to read file...");
-	if ((res = attoFile_read(&file)) != NULL)
+	if ((res = attoFile_read(&editor.file)) != NULL)
 	{
 		attoData_statusDraw(&editor, res);
 	}
 
 	attoData_refresh(&editor);
-	while (atto_loop());
+	while (atto_loop(&editor));
 
 	return 0;
 }

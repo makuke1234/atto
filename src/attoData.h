@@ -2,6 +2,7 @@
 #define ATTODATA_H
 
 #include "common.h"
+#include "attoFile.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -16,8 +17,11 @@ typedef struct attoData_t
 		uint32_t w, h;
 	} scrbuf;
 	COORD cursorpos;
+
+	attoFile_t file;
 } attoData_t;
 
+void attoData_reset(attoData_t * restrict self);
 bool attoData_init(attoData_t * restrict self);
 void attoData_refresh(attoData_t * restrict self);
 void attoData_refreshAll(attoData_t * restrict self);

@@ -4,10 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-attoFile_t file;
-attoData_t editor;
-
 bool boolGet(uint8_t * restrict arr, size_t index)
 {
 	return (arr[index / 8] >> (index % 8)) & 0x01;
@@ -37,11 +33,16 @@ uint32_t u32Max(uint32_t a, uint32_t b)
 }
 
 
+static attoData_t * s_atExitData = NULL;
+
+void atto_exitHandlerSetVars(attoData_t * pdata)
+{
+	s_atExitData = pdata;
+}
 void atto_exitHandler(void)
 {
 	// Clear resources
-	attoFile_destruct(&file);
-	attoData_destruct(&editor);
+	attoData_destruct(s_atExitData);
 }
 
 const wchar_t * atto_getFileName(int argc, const wchar_t * const * const argv)
@@ -69,8 +70,9 @@ void atto_printErr(enum attoErr errCode)
 	puts(atto_errCodes[errCode]);
 }
 
-bool atto_loop(void)
+bool atto_loop(attoData_t * restrict peditor)
 {
+	attoFile_t * restrict pfile = &peditor->file;
 	enum SpecialAsciiCodes
 	{
 		sac_Ctrl_Q = 17,
@@ -82,7 +84,7 @@ bool atto_loop(void)
 
 	INPUT_RECORD ir;
 	DWORD evRead;
-	if (!ReadConsoleInputW(editor.conIn, &ir, 1, &evRead))
+	if (!ReadConsoleInputW(peditor->conIn, &ir, 1, &evRead))
 	{
 		return true;
 	}
@@ -119,38 +121,38 @@ bool atto_loop(void)
 			else if (boolGet(keybuffer, sac_Ctrl_R) && !boolGet(prevkeybuffer, sac_Ctrl_R))	// Reload file
 			{
 				const wchar_t * res;
-				if ((res = attoFile_read(&file)) != NULL)
+				if ((res = attoFile_read(pfile)) != NULL)
 				{
-					attoData_statusDraw(&editor, res);
+					attoData_statusDraw(peditor, res);
 				}
 				else
 				{
-					attoData_statusDraw(&editor, L"File reloaded successfully!");
+					attoData_statusDraw(peditor, L"File reloaded successfully!");
 				}
-				attoData_refresh(&editor);
+				attoData_refresh(peditor);
 			}
 			else if (boolGet(keybuffer, sac_Ctrl_S) && !boolGet(prevkeybuffer, sac_Ctrl_S))	// Save file
 			{
-				int saved = attoFile_write(&file);
+				int saved = attoFile_write(pfile);
 				switch (saved)
 				{
 				case writeRes_nothingNew:
-					attoData_statusDraw(&editor, L"Nothing new to save");
+					attoData_statusDraw(peditor, L"Nothing new to save");
 					break;
 				case writeRes_openError:
-					attoData_statusDraw(&editor, L"File open error!");
+					attoData_statusDraw(peditor, L"File open error!");
 					break;
 				case writeRes_writeError:
-					attoData_statusDraw(&editor, L"File is write-protected!");
+					attoData_statusDraw(peditor, L"File is write-protected!");
 					break;
 				case writeRes_memError:
-					attoData_statusDraw(&editor, L"Memory allocation error!");
+					attoData_statusDraw(peditor, L"Memory allocation error!");
 					break;
 				default:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"Wrote %d bytes.", saved);
-					attoData_statusDraw(&editor, tempstr);
+					attoData_statusDraw(peditor, tempstr);
 				}
 				}
 			}
@@ -159,10 +161,10 @@ bool atto_loop(void)
 			{
 				wchar_t tempstr[MAX_STATUS];
 				swprintf_s(tempstr, MAX_STATUS, L"'%c' #%d", key, keyCount);
-				attoData_statusDraw(&editor, tempstr);
-				if (attoFile_addNormalCh(&file, key))
+				attoData_statusDraw(peditor, tempstr);
+				if (attoFile_addNormalCh(pfile, key))
 				{
-					attoData_refresh(&editor);
+					attoData_refresh(peditor);
 				}
 			}
 			// Special keys
@@ -173,7 +175,7 @@ bool atto_loop(void)
 				case VK_TAB:
 					if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
 					{
-						attoData_statusDraw(&editor, L"\u2191 + 'TAB'");
+						attoData_statusDraw(peditor, L"\u2191 + 'TAB'");
 						wVirtKey = VK_OEM_BACKTAB;
 						break;
 					}
@@ -196,35 +198,35 @@ bool atto_loop(void)
 						[VK_UP]     = L"\u2191",
 						[VK_DOWN]   = L"\u2193"
 					};
-					attoData_statusDraw(&editor, buf[wVirtKey]);
+					attoData_statusDraw(peditor, buf[wVirtKey]);
 					break;
 				}
 				case VK_CAPITAL:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'CAPS' %s", (GetKeyState(VK_CAPITAL) & 0x0001) ? L"On" : L"Off");
-					attoData_statusDraw(&editor, tempstr);
+					attoData_statusDraw(peditor, tempstr);
 					break;
 				}
 				case VK_NUMLOCK:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'NUMLOCK' %s", (GetKeyState(VK_NUMLOCK) & 0x0001) ? L"On" : L"Off");
-					attoData_statusDraw(&editor, tempstr);
+					attoData_statusDraw(peditor, tempstr);
 					break;
 				}
 				case VK_SCROLL:
 				{
 					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'SCRLOCK' %s", (GetKeyState(VK_SCROLL) & 0x0001) ? L"On" : L"Off");
-					attoData_statusDraw(&editor, tempstr);
+					attoData_statusDraw(peditor, tempstr);
 					break;
 				}
 				}
 
-				if (attoFile_addSpecialCh(&file, wVirtKey))
+				if (attoFile_addSpecialCh(pfile, wVirtKey))
 				{
-					attoData_refresh(&editor);
+					attoData_refresh(peditor);
 				}
 			}
 		}
@@ -234,47 +236,46 @@ bool atto_loop(void)
 		}
 		prevkey = key;
 		memcpy(prevkeybuffer, keybuffer, 32 * sizeof(uint8_t));
-		FlushConsoleInputBuffer(editor.conIn);
+		FlushConsoleInputBuffer(peditor->conIn);
 	}
 
 	return true;
 }
-void atto_updateScrbuf(void)
+void atto_updateScrbuf(attoData_t * restrict peditor)
 {
-	attoFile_updateCury(&file, editor.scrbuf.h - 2);
-	int32_t delta = (int32_t)file.data.currentNode->curx - (int32_t)editor.scrbuf.w - (int32_t)file.data.curx;
+	attoFile_t * restrict pfile = &peditor->file;
+	attoFile_updateCury(pfile, peditor->scrbuf.h - 2);
+	int32_t delta = (int32_t)pfile->data.currentNode->curx - (int32_t)peditor->scrbuf.w - (int32_t)pfile->data.curx;
 	if (delta >= 0)
 	{
-		file.data.curx += (uint32_t)(delta + 1);
+		pfile->data.curx += (uint32_t)(delta + 1);
 	}
-	else if (file.data.curx > file.data.currentNode->curx)
+	else if (pfile->data.curx > pfile->data.currentNode->curx)
 	{
-		file.data.curx = u32Max(1, file.data.currentNode->curx) - 1;
+		pfile->data.curx = u32Max(1, pfile->data.currentNode->curx) - 1;
 	}
-	uint32_t size = editor.scrbuf.w * editor.scrbuf.h;
+	uint32_t size = peditor->scrbuf.w * peditor->scrbuf.h;
 	for (uint32_t i = 0; i < size; ++i)
 	{
-		editor.scrbuf.mem[i] = L' ';
+		peditor->scrbuf.mem[i] = L' ';
 	}
-	attoLineNode_t * node = file.data.pcury;
-	for (uint32_t i = 0; i < editor.scrbuf.h - 1 && node != NULL; ++i)
+	attoLineNode_t * node = pfile->data.pcury;
+	for (uint32_t i = 0; i < peditor->scrbuf.h - 1 && node != NULL; ++i)
 	{
 		// if line is active line
-		if (node == file.data.currentNode)
+		if (node == pfile->data.currentNode)
 		{
 			// Update cursor position
-			editor.cursorpos.Y = (int16_t)i;
-			editor.cursorpos.X = (int16_t)u32Min(node->curx - file.data.curx, (uint32_t)(editor.scrbuf.w - 1));
-			SetConsoleCursorPosition(editor.scrbuf.handle, editor.cursorpos);
+			peditor->cursorpos = (COORD){ .X = (int16_t)u32Min(node->curx - pfile->data.curx, peditor->scrbuf.w - 1), .Y = (int16_t)i };
+			SetConsoleCursorPosition(peditor->scrbuf.handle, peditor->cursorpos);
 		}
-		wchar_t * destination = &editor.scrbuf.mem[i * editor.scrbuf.w];
+		wchar_t * destination = &peditor->scrbuf.mem[i * peditor->scrbuf.w];
 
 		// Drawing
 
 		// Advance idx by file.data.curx
 		uint32_t idx = 0;
-
-		for (uint32_t j = file.data.curx; j > 0 && idx < node->lineEndx;)
+		for (uint32_t j = pfile->data.curx; j > 0 && idx < node->lineEndx;)
 		{
 			if (idx == node->curx)
 			{
@@ -284,8 +285,7 @@ void atto_updateScrbuf(void)
 			++idx;
 			--j;
 		}
-
-		for (uint32_t j = 0; idx < node->lineEndx && j < editor.scrbuf.w;)
+		for (uint32_t j = 0; idx < node->lineEndx && j < peditor->scrbuf.w;)
 		{
 			if (idx == node->curx)
 			{
