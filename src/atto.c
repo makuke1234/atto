@@ -82,7 +82,10 @@ bool atto_loop(void)
 
 	INPUT_RECORD ir;
 	DWORD evRead;
-	ReadConsoleInputW(editor.conIn, &ir, 1, &evRead);
+	if (!ReadConsoleInputW(editor.conIn, &ir, 1, &evRead))
+	{
+		return true;
+	}
 	if (evRead && ir.EventType == KEY_EVENT)
 	{
 		static uint8_t keybuffer[32] = { 0 }, prevkeybuffer[32] = { 0 };
