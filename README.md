@@ -7,11 +7,11 @@
 Yet another text editor ought to be as simple/small as possible (following the KISS principle). It is purely written in C and
 it's designed to be used solely on Microsoft Windows (relies on Win32 API). MinGW-32 GCC has been used as the compiler.
 
-Currently, my other tool [slocWin32](https://github.com/makuke1234/slocWin32) reports 1538 lines of code for this editor:
+Currently, my other tool [slocWin32](https://github.com/makuke1234/slocWin32) reports 1571 lines of code for this editor:
 
 ![SLOC](./images/sloc.png)
 
-With profiling removed (-76 sloc), it amounts to only **1462** lines of code! Very small indeed...
+With profiling removed (-80 sloc), it amounts to only **1491** lines of code! Very small indeed...
 
 
 # Obtaining
