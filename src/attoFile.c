@@ -107,11 +107,10 @@ attoLineNode_t * attoLine_createText(
 
 bool attoLine_getText(const attoLineNode_t * restrict self, wchar_t ** restrict text, uint32_t * restrict tarrsz)
 {
-	if (text == NULL)
-	{
-		return false;
-	}
+	assert(text != NULL);
+
 	uint32_t totalLen = self->lineEndx - self->freeSpaceLen + 1;
+	writeProfiler("attoLine_getText", "Total length: %u characters", totalLen);
 
 	if (tarrsz != NULL && *tarrsz < totalLen)
 	{
@@ -439,6 +438,7 @@ int attoFile_write(attoFile_t * restrict self)
 	// Generate lines
 	wchar_t * lines = NULL, * line = NULL;
 	uint32_t linesCap = 0, linesLen = 0, lineCap = 0;
+	
 
 	attoLineNode_t * node = self->data.firstNode;
 
@@ -468,7 +468,7 @@ int attoFile_write(attoFile_t * restrict self)
 
 		// Add line to lines, concatenate \n character, if necessary
 
-		if (newLinesLen > linesCap)
+		if (newLinesLen >= linesCap)
 		{
 			// Resize lines array
 			uint32_t newCap = (newLinesLen + 1) * 2;
