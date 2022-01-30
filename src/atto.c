@@ -67,7 +67,6 @@ void atto_printErr(enum attoErr errCode)
 	{
 		errCode = attoE_unknown;
 	}
-
 	puts(atto_errCodes[errCode]);
 }
 
@@ -93,7 +92,6 @@ bool atto_loop()
 
 		static int keyCount = 1;
 
-
 		wchar_t key      = ir.Event.KeyEvent.uChar.UnicodeChar;
 		wchar_t wVirtKey = ir.Event.KeyEvent.wVirtualKeyCode;
 		bool state       = ir.Event.KeyEvent.bKeyDown != 0;
@@ -109,7 +107,6 @@ bool atto_loop()
 				keyCount = 1;
 			}
 		}
-
 
 		if (state)
 		{
@@ -225,6 +222,7 @@ bool atto_loop()
 					break;
 				}
 				}
+
 				if (attoFile_addSpecialCh(&file, wVirtKey))
 				{
 					attoDS_refresh(&editor);
@@ -253,13 +251,8 @@ void atto_updateScrbuf()
 		editor.scrbuf.mem[i] = L' ';
 	}
 	attoLineNode * node = file.data.pcury;
-	for (uint32_t i = 0; i < editor.scrbuf.h - 1; ++i)
+	for (uint32_t i = 0; i < editor.scrbuf.h - 1 && node != NULL; ++i)
 	{
-		if (node == NULL)
-		{
-			break;
-		}
-
 		// if line is active line
 		if (node == file.data.currentNode)
 		{
@@ -306,7 +299,15 @@ uint32_t atto_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, 
 {
 	if (numBytes == 0)
 	{
-		*putf16 = malloc(sizeof(wchar_t));
+		if (sz != NULL && *sz < 1)
+		{
+			*putf16 = realloc(*putf16, sizeof(wchar_t));
+		}
+		else if (*putf16 == NULL || sz == NULL)
+		{
+			*putf16 = malloc(sizeof(wchar_t));
+		}
+
 		if (*putf16 != NULL)
 		{
 			*putf16[0] = L'\0';
@@ -356,6 +357,25 @@ uint32_t atto_convToUnicode(const char * utf8, int numBytes, wchar_t ** putf16, 
 }
 uint32_t atto_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8, uint32_t * sz)
 {
+	if (numChars == 0)
+	{
+		if (sz != NULL && *sz < 1)
+		{
+			*putf8 = realloc(*putf8, sizeof(wchar_t));
+		}
+		else if (*putf8 == NULL || sz == NULL)
+		{
+			*putf8 = malloc(sizeof(wchar_t));
+		}
+
+		if (*putf8 != NULL)
+		{
+			*putf8[0] = L'\0';
+		}
+
+		return 0;
+	}
+	
 	// Quory the needed size
 	uint32_t size = (uint32_t)WideCharToMultiByte(
 		CP_UTF8,
@@ -402,7 +422,7 @@ uint32_t atto_convFromUnicode(const wchar_t * utf16, int numChars, char ** putf8
 }
 uint32_t atto_strnToLines(wchar_t * utf16, uint32_t chars, wchar_t *** lines)
 {
-	// Count number of newline characters
+	// Count number of newline characters (to count number of lines - 1)
 	uint32_t newlines = 1;
 	for (uint32_t i = 0; i < chars; ++i)
 	{

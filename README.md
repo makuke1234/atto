@@ -47,6 +47,8 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
+* 1.4
+	* Fix memory leak in Unicode conversion functions, if input string is empty
 * 1.3
 	* Refactor and modularise codebase
 	* Remove profiling from release build, make binary ~2x smaller
