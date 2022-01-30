@@ -1,7 +1,8 @@
 CC=gcc
-CDEFFLAGS=-std=c99 -Wall -Wextra -Wpedantic -Wconversion -Wunused-variable -municode -D PROFILING_ENABLE=1
-CFLAGS=-O3 -Wl,--strip-all,--build-id=none -fno-ident
-CFLAGSD=-g -O0
+WARN=-Wall -Wextra -Wpedantic -Wconversion -Wunused-variable
+CDEFFLAGS=-std=c99 $(WARN) -municode
+CFLAGS=-O3 -Wl,--strip-all,--build-id=none,--gc-sections -fno-ident
+CFLAGSD=-g -O0 -D PROFILING_ENABLE=1
 
 TARGET=atto
 OBJ=obj

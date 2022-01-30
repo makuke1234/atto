@@ -16,9 +16,11 @@ void profilerEnd(const char * funcName);
 #else
 
 #define initProfiler()
-#define writeProfiler(function, format, ...)
+#define writeProfiler(function, ...)
 #define profilerStart()
 #define profilerEnd(funcName)
+
+typedef int make_iso_compilers_happy;
 
 #endif
 #endif
