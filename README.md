@@ -58,7 +58,7 @@ Currently a fixed number of features is supported:
 	* Remove profiling from release build, make binary ~2x smaller
 * 1.2
 	* Rename everything finally from "pico" to "atto". "pico" was chosen initially,
-	later swapped it out for "atto" ("pico" was already taken).
+	later swapped it out for "atto" ("pico" is already taken (predecessor of [GNU nano](https://github.com/madnight/nano))).
 * 1.1
 	* Fix arrow characters in status messages
 * 1.0
@@ -67,7 +67,7 @@ Currently a fixed number of features is supported:
 
 # Contributing
 
-This project is by no means perfect. Feel free to report any bugs that you may find under
+This project is by no means perfect. Feel free to report any bugs, that you may find, under
 **[Issues](https://github.com/makuke1234/atto/issues)**.
 Feature requests are also welcome but keep in mind that the priority of this editor
 is to be as small as possible. Bug fixing is my first priority.
