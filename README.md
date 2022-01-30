@@ -57,7 +57,7 @@ Currently a fixed number of features is supported:
 	* Eliminate global variables
 	* Add new data-save check, only saves if any changes were made
 	* Fix bug with program crashing on empty files
-	* [ ] Self-document code in the header files
+	* Self-document code in the header files
 * 1.6
 	* Add minor check in input loop
 	* Fix bug with cursor not showing properly on very long lines

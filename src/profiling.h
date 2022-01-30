@@ -5,9 +5,29 @@
 
 #include "common.h"
 
+/**
+ * @brief Initialise profiler, exits on failure
+ * 
+ */
 void initProfiler(void);
+/**
+ * @brief Write a profiler log message
+ * 
+ * @param function Function name of writer
+ * @param format Standard printf message format
+ * @param ... Variadic format arguments
+ */
 void writeProfiler(const char * restrict function, const char * restrict format, ...);
+/**
+ * @brief Start profiler timestamp
+ * 
+ */
 void profilerStart(void);
+/**
+ * @brief Stop profiler timestamp
+ * 
+ * @param funcName Function name of timestamp writer
+ */
 void profilerEnd(const char * funcName);
 
 

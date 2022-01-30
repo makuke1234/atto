@@ -63,15 +63,7 @@ attoLineNode_t * attoLine_createText(
 	int32_t mText
 )
 {
-	uint32_t maxText;
-	if (mText == -1)
-	{
-		maxText = (uint32_t)wcslen(lineText);
-	}
-	else
-	{
-		maxText = (uint32_t)mText;
-	}
+	uint32_t maxText = mText == -1 ? (uint32_t)wcslen(lineText) : (uint32_t)mText;
 
 	attoLineNode_t * node = malloc(sizeof(attoLineNode_t));
 	if (node == NULL)
@@ -819,7 +811,7 @@ void attoFile_updateCury(attoFile_t * restrict self, uint32_t height)
 }
 
 
-void attoFile_destruct(attoFile_t * restrict self)
+void attoFile_destroy(attoFile_t * restrict self)
 {
 	attoFile_close(self);
 	attoFile_clearLines(self);

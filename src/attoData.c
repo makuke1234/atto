@@ -118,7 +118,7 @@ void attoData_statusRefresh(attoData_t * restrict self)
 	);
 }
 
-void attoData_destruct(attoData_t * restrict self)
+void attoData_destroy(attoData_t * restrict self)
 {
 	if (self->scrbuf.mem != NULL)
 	{
@@ -129,5 +129,5 @@ void attoData_destruct(attoData_t * restrict self)
 	{
 		SetConsoleActiveScreenBuffer(self->conOut);
 	}
-	attoFile_destruct(&self->file);
+	attoFile_destroy(&self->file);
 }

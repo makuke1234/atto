@@ -40,7 +40,7 @@ void atto_exitHandlerSetVars(attoData_t * pdata)
 void atto_exitHandler(void)
 {
 	// Clear resources
-	attoData_destruct(s_atExitData);
+	attoData_destroy(s_atExitData);
 }
 
 const wchar_t * atto_getFileName(int argc, const wchar_t * const * const argv)
@@ -429,7 +429,7 @@ uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** 
 	uint32_t newlines = 1;
 	for (uint32_t i = 0; i < chars; ++i)
 	{
-		if (utf16[i] == '\n')
+		if (utf16[i] == L'\n')
 		{
 			++newlines;
 		}
@@ -443,16 +443,16 @@ uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** 
 	uint32_t starti = 0, j = 0;
 	for (uint32_t i = 0; i < chars; ++i)
 	{
-		if (utf16[i] == '\n')
+		if (utf16[i] == L'\n')
 		{
-			utf16[i] = '\0';
+			utf16[i] = L'\0';
 			(*lines)[j] = &utf16[starti];
 			starti = i + 1;
 			++j;
 		}
-		else if (utf16[i] == '\r')
+		else if (utf16[i] == L'\r')
 		{
-			utf16[i] = '\0';
+			utf16[i] = L'\0';
 			(*lines)[j] = &utf16[starti];
 			starti = i + 2;
 			++i;
@@ -465,17 +465,7 @@ uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** 
 }
 uint32_t atto_tabsToSpaces(wchar_t ** restrict str, uint32_t * restrict len)
 {
-	uint32_t realLen;
-	if (len == NULL || *len == 0)
-	{
-		realLen = (uint32_t)wcslen(*str);
-	}
-	else
-	{
-		realLen = *len;
-	}
-	++realLen;
-	uint32_t realCap = realLen;
+	uint32_t realLen = ((len == NULL || *len == 0) ? (uint32_t)wcslen(*str) + 1 : *len), realCap = realLen;
 
 	// Conversion happens here
 	wchar_t * s = *str;
@@ -507,6 +497,13 @@ uint32_t atto_tabsToSpaces(wchar_t ** restrict str, uint32_t * restrict len)
 	}
 
 	*str = s;
+	// Shrink string
+	s = realloc(s, sizeof(wchar_t) * realLen);
+	if (s != NULL)
+	{
+		*str = s;
+	}
+	
 	if (len != NULL)
 	{
 		*len = realLen;
