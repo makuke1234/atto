@@ -11,7 +11,7 @@ Currently, my other tool [slocWin32](https://github.com/makuke1234/slocWin32) re
 
 ![SLOC](./images/sloc.png)
 
-With profiling removed it amount to only **1428** lines of code! Very small indeed...
+With profiling removed, it amounts to only **1428** lines of code! Very small indeed...
 
 
 # Obtaining
