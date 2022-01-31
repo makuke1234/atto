@@ -145,8 +145,10 @@ bool attoLine_realloc(attoLineNode_t * restrict self)
 {
 	if (self->freeSpaceLen == ATTO_LNODE_DEFAULT_FREE)
 	{
+		writeProfiler("attoLine_realloc", "Reallocation succeeded");
 		return true;
 	}
+	writeProfiler("attoLine_realloc", "Reallocating line");
 	uint32_t totalLen = self->lineEndx - self->freeSpaceLen;
 	void * newmem = realloc(self->line, sizeof(wchar_t) * (totalLen + ATTO_LNODE_DEFAULT_FREE));
 	if (newmem == NULL)
@@ -154,18 +156,19 @@ bool attoLine_realloc(attoLineNode_t * restrict self)
 		return false;
 	}
 	self->line = newmem;
-	if (self->curx != totalLen)
+	if (self->curx < totalLen)
 	{
 		memmove(
 			self->line + self->curx + ATTO_LNODE_DEFAULT_FREE,
 			self->line + self->curx + self->freeSpaceLen,
-			sizeof(wchar_t) * (totalLen - self->curx - self->freeSpaceLen)
+			sizeof(wchar_t) * (totalLen - self->curx)
 		);
 	}
 
 	self->lineEndx     = totalLen + ATTO_LNODE_DEFAULT_FREE;
 	self->freeSpaceLen = ATTO_LNODE_DEFAULT_FREE;
 
+	writeProfiler("attoLine_realloc", "Reallocation succeeded");
 	return true;
 }
 
@@ -609,12 +612,16 @@ void attoFile_setConTitle(const attoFile_t * restrict self)
 
 bool attoFile_addNormalCh(attoFile_t * restrict self, wchar_t ch)
 {
+	assert(self->data.currentNode != NULL);
+	writeProfiler("attoFile_addNormalCh", "Add character %C", ch);
 	attoLineNode_t * node = self->data.currentNode;
 
-	if (node->freeSpaceLen < 1 && !attoLine_realloc(node))
+	if ((node->freeSpaceLen == 0) && !attoLine_realloc(node))
 	{
 		return false;
 	}
+
+	writeProfiler("attoFile_addNormalCh", "curx: %u, free: %u, end: %u", node->curx, node->freeSpaceLen, node->lineEndx);
 
 	node->line[node->curx] = ch;
 	++node->curx;

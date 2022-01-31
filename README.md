@@ -56,6 +56,9 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
+* 1.9
+	* Fix bug in renderer with editor randomly freezing when inserting characters
+		* *Renderer went into an infinite loop, if free space is 0*
 * 1.8
 	* Add extra documentation
 	* Add support for CR and CRLF line endings, LF is still supported

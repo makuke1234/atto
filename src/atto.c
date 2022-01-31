@@ -324,7 +324,7 @@ void atto_updateScrbuf(attoData_t * restrict peditor)
 		uint32_t idx = 0;
 		for (uint32_t j = pfile->data.curx; j > 0 && idx < node->lineEndx;)
 		{
-			if (idx == node->curx)
+			if (idx == node->curx && node->freeSpaceLen > 0)
 			{
 				idx += node->freeSpaceLen;
 				continue;
@@ -334,7 +334,7 @@ void atto_updateScrbuf(attoData_t * restrict peditor)
 		}
 		for (uint32_t j = 0; idx < node->lineEndx && j < peditor->scrbuf.w;)
 		{
-			if (idx == node->curx)
+			if (idx == node->curx && node->freeSpaceLen > 0)
 			{
 				idx += node->freeSpaceLen;
 				continue;
