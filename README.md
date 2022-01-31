@@ -44,7 +44,7 @@ Currently a fixed number of features is supported:
 
 # Screenshots
 
-## Demonstrating unicode support, file test5.txt is open
+## Demonstrating unicode support, file test5.txt is open with LF EOL sequences
 ![Unicode Support](./images/unicodeSupport.PNG)
 
 ## Last key shown on status bar with respective repeat count
