@@ -27,14 +27,14 @@ Currently a fixed number of features is supported:
 - [x] atto editor utilizes the whole command prompt window, window is as big as your console currently is
 - [x] the last line of the window is dedicated to status, for example showing success or failure when an attempt to save the file has been made
 - [x] the following keyboard shortcuts:
-	| Key      | Action |
-	| -------- | ------ |
-	| ESC      | Closes the editor |
-	| Ctrl+S   | Tries to save the current open file |
-	| Ctrl+R   | Tries to reload contents of current file |
-	| Ctrl+E F | Switch to CRLF EOL sequence |
-	| Ctrl+E L | Switch to LF EOL sequence |
-	| Ctrl+E C | Switch to CR EOL sequence |
+	| Key                            | Action                                   |
+	| ------------------------------ | ---------------------------------------- |
+	| <kbd>ESC</kbd>                 | Closes the editor                        |
+	| <kbd>Ctrl+S</kbd>              | Tries to save the current open file      |
+	| <kbd>Ctrl+R</kbd>              | Tries to reload contents of current file |
+	| <kbd>Ctrl+E</kbd> <kbd>F</kbd> | Switch to CRLF EOL sequence              |
+	| <kbd>Ctrl+E</kbd> <kbd>L</kbd> | Switch to LF EOL sequence                |
+	| <kbd>Ctrl+E</kbd> <kbd>C</kbd> | Switch to CR EOL sequence                |
 - [x] 2 ways to start the program:
 	| Syntax        | Action |
 	| ------------- | ------ |
