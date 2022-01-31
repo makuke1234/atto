@@ -6,7 +6,6 @@ static attoData_t editor;
 int wmain(int argc, const wchar_t * argv[])
 {
 	atto_exitHandlerSetVars(&editor);
-
 	attoData_reset(&editor);
 
 	// Initialise profiler, if applicable

@@ -26,7 +26,7 @@ typedef struct attoData_t
  */
 void attoData_reset(attoData_t * restrict self);
 /**
- * @brief Initialises editor data strucutre
+ * @brief Initialises editor data strucutre, also sets atexit() handler function
  * 
  * @param self Pointer to attoData_t structure
  * @return true Success

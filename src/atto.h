@@ -59,7 +59,7 @@ enum attoErr
 	attoE_num_of_elems
 };
 /**
- * @brief Prints error message
+ * @brief Prints error message to stderr, adds newline character
  * 
  * @param errCode Error code
  */

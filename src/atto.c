@@ -63,7 +63,7 @@ void atto_printErr(enum attoErr errCode)
 	{
 		errCode = attoE_unknown;
 	}
-	puts(atto_errCodes[errCode]);
+	fprintf(stderr, "%s\n", atto_errCodes[errCode]);
 }
 
 bool atto_loop(attoData_t * restrict peditor)
