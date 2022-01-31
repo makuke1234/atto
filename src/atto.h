@@ -111,9 +111,10 @@ uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char
  * @param lines Address of wchar_t double-pointer, double-pointer hosts wchar_t
  * pointer array, where each pointer is a character array representing line in the text file.
  * Initial value of double-pointer is irrelevant
+ * @param eolSeq Address of attoEOLsequence enumerator, receives the EOL format used
  * @return uint32_t Number of lines found
  */
-uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** restrict lines);
+uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** restrict lines, enum attoEOLsequence * restrict eolSeq);
 /**
  * @brief Converts all tabs in string to spaces, modifies original string
  * 

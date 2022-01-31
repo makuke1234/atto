@@ -74,6 +74,7 @@ bool atto_loop(attoData_t * restrict peditor)
 		sac_Ctrl_Q = 17,
 		sac_Ctrl_R = 18,
 		sac_Ctrl_S = 19,
+		sac_Ctrl_E = 5,
 
 		sac_last_code = 31
 	};
@@ -90,6 +91,7 @@ bool atto_loop(attoData_t * restrict peditor)
 		static wchar_t prevkey;
 
 		static int keyCount = 1;
+		static bool waitingEnc = false;
 
 		wchar_t key      = ir.Event.KeyEvent.uChar.UnicodeChar;
 		wchar_t wVirtKey = ir.Event.KeyEvent.wVirtualKeyCode;
@@ -114,6 +116,42 @@ bool atto_loop(attoData_t * restrict peditor)
 			{
 				return false;
 			}
+			else if (waitingEnc)
+			{
+				bool done = true;
+				switch (wVirtKey)
+				{
+				// CRLF
+				case L'F':
+					pfile->eolSeq = EOL_CRLF;
+					break;
+				// LF
+				case L'L':
+					pfile->eolSeq = EOL_LF;
+					break;
+				// CR
+				case L'C':
+					pfile->eolSeq = EOL_CR;
+					break;
+				default:
+					attoData_statusDraw(peditor, L"Unknown EOL combination!");
+					done = false;
+				}
+				if (done)
+				{
+					wchar_t tempstr[MAX_STATUS];
+					swprintf_s(
+						tempstr,
+						MAX_STATUS,
+						L"Using %s%s line endings.",
+						(pfile->eolSeq & EOL_CR) ? L"CR" : L"",
+						(pfile->eolSeq & EOL_LF) ? L"LF" : L""
+					);
+					attoData_statusDraw(peditor, tempstr);
+				}
+
+				waitingEnc = false;
+			}
 			else if (boolGet(keybuffer, sac_Ctrl_R) && !boolGet(prevkeybuffer, sac_Ctrl_R))	// Reload file
 			{
 				const wchar_t * res;
@@ -123,7 +161,15 @@ bool atto_loop(attoData_t * restrict peditor)
 				}
 				else
 				{
-					attoData_statusDraw(peditor, L"File reloaded successfully!");
+					wchar_t tempstr[MAX_STATUS];
+					swprintf_s(
+						tempstr,
+						MAX_STATUS,
+						L"File reloaded successfully! %s%s line endings.",
+						(pfile->eolSeq & EOL_CR) ? L"CR" : L"",
+						(pfile->eolSeq & EOL_LF) ? L"LF" : L""
+					);
+					attoData_statusDraw(peditor, tempstr);
 				}
 				attoData_refresh(peditor);
 			}
@@ -151,6 +197,11 @@ bool atto_loop(attoData_t * restrict peditor)
 					attoData_statusDraw(peditor, tempstr);
 				}
 				}
+			}
+			else if (boolGet(keybuffer, sac_Ctrl_E) && !boolGet(prevkeybuffer, sac_Ctrl_E))
+			{
+				waitingEnc = true;
+				attoData_statusDraw(peditor, L"Waiting for EOL combination (F = CRLF, L = LF, C = CR)...");
 			}
 			// Normal keys
 			else if (key > sac_last_code)
@@ -423,14 +474,28 @@ uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char
 	);
 	return size;
 }
-uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** restrict lines)
+uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** restrict lines, enum attoEOLsequence * restrict eolSeq)
 {
+	assert(utf16 != NULL);
+	assert(lines != NULL);
+	assert(eolSeq != NULL);
+
 	// Count number of newline characters (to count number of lines - 1)
 	uint32_t newlines = 1;
+	
+	// Set default EOL sequence
+	*eolSeq = EOL_def;
 	for (uint32_t i = 0; i < chars; ++i)
 	{
-		if (utf16[i] == L'\n')
+		if (utf16[i] == L'\r')
 		{
+			*eolSeq = ((i + 1 < chars) && (utf16[i+1] == L'\n')) ? EOL_CRLF : EOL_CR;
+			++newlines;
+			i += (*eolSeq == EOL_CRLF);
+		}
+		else if (utf16[i] == L'\n')
+		{
+			*eolSeq = EOL_LF;
 			++newlines;
 		}
 	}
@@ -440,22 +505,16 @@ uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** 
 		return 0;
 	}
 
+	bool isCRLF = (*eolSeq == EOL_CRLF);
 	uint32_t starti = 0, j = 0;
 	for (uint32_t i = 0; i < chars; ++i)
 	{
-		if (utf16[i] == L'\n')
+		if (utf16[i] == L'\n' || utf16[i] == L'\r')
 		{
 			utf16[i] = L'\0';
 			(*lines)[j] = &utf16[starti];
-			starti = i + 1;
-			++j;
-		}
-		else if (utf16[i] == L'\r')
-		{
-			utf16[i] = L'\0';
-			(*lines)[j] = &utf16[starti];
-			starti = i + 2;
-			++i;
+			starti = i + 1 + isCRLF;
+			i += isCRLF;
 			++j;
 		}
 	}

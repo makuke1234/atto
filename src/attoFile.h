@@ -94,11 +94,23 @@ void attoLine_moveCursor(attoLineNode_t * restrict self, int32_t delta);
  */
 void attoLine_destroy(attoLineNode_t * restrict self);
 
+enum attoEOLsequence
+{
+	EOL_not  = 0x00,
+	EOL_CR   = 0x01,
+	EOL_LF   = 0x02,
+	EOL_CRLF = EOL_CR | EOL_LF,
+
+	EOL_def  = EOL_CRLF,
+};
+
 typedef struct attoFile_t
 {
 	const wchar_t * fileName;
 	HANDLE hFile;
 	bool canWrite;
+	enum attoEOLsequence eolSeq;
+
 	struct
 	{
 		attoLineNode_t * firstNode;

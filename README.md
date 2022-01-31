@@ -23,15 +23,18 @@ With profiling removed (-80 sloc), it amounts to only **1491** lines of code! Ve
 
 Currently a fixed number of features is supported:
 - [x] file must be given as a command-line argument, 'raw editing'/'saving later to a file' is impossible for a reason
-- [x] all saved files use LF line-ending format
+- [x] all saved files use CRLF line-ending format by default, LF and CR are also supported with version 1.8
 - [x] atto editor utilizes the whole command prompt window, window is as big as your console currently is
 - [x] the last line of the window is dedicated to status, for example showing success or failure when an attempt to save the file has been made
 - [x] the following keyboard shortcuts:
-	| Key    | Action |
-	| ------ | ------ |
-	| ESC    | Closes the editor |
-	| Ctrl+S | Tries to save the current open file |
-	| Ctrl+R | Tries to reload contents of current file |
+	| Key      | Action |
+	| -------- | ------ |
+	| ESC      | Closes the editor |
+	| Ctrl+S   | Tries to save the current open file |
+	| Ctrl+R   | Tries to reload contents of current file |
+	| Ctrl+E F | Switch to CRLF EOL sequence |
+	| Ctrl+E L | Switch to LF EOL sequence |
+	| Ctrl+E C | Switch to CR EOL sequence |
 - [x] 2 ways to start the program:
 	| Syntax        | Action |
 	| ------------- | ------ |
@@ -53,6 +56,11 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
+* 1.8
+	* Add extra documentation
+	* Add support for CR and CRLF line endings, LF is still supported
+	* Files are saved using CRLF by default
+	* Add support for changing EOL sequneces
 * 1.7
 	* Eliminate global variables
 	* Add new data-save check, only saves if any changes were made

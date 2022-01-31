@@ -40,6 +40,18 @@ int wmain(int argc, const wchar_t * argv[])
 	{
 		attoData_statusDraw(&editor, res);
 	}
+	else
+	{
+		wchar_t tempstr[MAX_STATUS];
+		swprintf_s(
+			tempstr,
+			MAX_STATUS,
+			L"File loaded successfully! %s%s line endings.",
+			(editor.file.eolSeq & EOL_CR) ? L"CR" : L"",
+			(editor.file.eolSeq & EOL_LF) ? L"LF" : L""
+		);
+		attoData_statusDraw(&editor, tempstr);
+	}
 
 	attoData_refresh(&editor);
 	while (atto_loop(&editor));

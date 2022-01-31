@@ -250,6 +250,7 @@ void attoFile_reset(attoFile_t * restrict self)
 		.fileName = NULL,
 		.hFile    = INVALID_HANDLE_VALUE,
 		.canWrite = false,
+		.eolSeq   = EOL_not,
 		.data     = {
 			.firstNode   = NULL,
 			.currentNode = NULL,
@@ -375,7 +376,7 @@ const wchar_t * attoFile_read(attoFile_t * restrict self)
 
 	// Save lines to structure
 	wchar_t ** lines = NULL;
-	uint32_t numLines = atto_strnToLines(utf16, chars, &lines);
+	uint32_t numLines = atto_strnToLines(utf16, chars, &lines, &self->eolSeq);
 	if (lines == NULL)
 	{
 		free(utf16);
@@ -434,6 +435,10 @@ int attoFile_write(attoFile_t * restrict self)
 
 	attoLineNode_t * node = self->data.firstNode;
 
+
+	const uint8_t eolSeq = self->eolSeq;
+	bool isCRLF = (self->eolSeq == EOL_CRLF);
+
 	while (node != NULL)
 	{
 		if (attoLine_getText(node, &line, &lineCap) == false)
@@ -454,7 +459,7 @@ int attoFile_write(attoFile_t * restrict self)
 
 		writeProfiler("attoFile_write", "Got line with size of %u characters. Line contents: \"%S\"", lineLen, line);
 
-		bool addnewline = node->nextNode != NULL;
+		uint32_t addnewline = (node->nextNode != NULL) ? 1 + isCRLF : 0;
 
 		uint32_t newLinesLen = linesLen + lineLen + addnewline;
 
@@ -491,7 +496,19 @@ int attoFile_write(attoFile_t * restrict self)
 
 		if (addnewline)
 		{
-			lines[linesLen - 1] = L'\n';
+			switch (eolSeq)
+			{
+			case EOL_CR:
+				lines[linesLen - 1] = L'\r';
+				break;
+			case EOL_LF:
+				lines[linesLen - 1] = L'\n';
+				break;
+			case EOL_CRLF:
+				lines[linesLen - 2] = L'\r';
+				lines[linesLen - 1] = L'\n';
+				break;
+			}
 		}
 		lines[linesLen] = L'\0';
 
