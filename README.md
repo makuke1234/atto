@@ -36,10 +36,10 @@ Currently a fixed number of features is supported:
 	| <kbd>Ctrl+E</kbd> <kbd>L</kbd> | Switch to LF EOL sequence                |
 	| <kbd>Ctrl+E</kbd> <kbd>C</kbd> | Switch to CR EOL sequence                |
 - [x] 2 ways to start the program:
-	| Syntax          | Action                                                                                                             |
-	| --------------- | ------------------------------------------------------------------------------------------------------------------ |
-	| `atto`          | Shows help<br>![help image](./images/help.PNG)                                                                     |
-	| `atto` \[file\] | Starts editor with the specified file,<br>file does not have to exist prior<br>(where \[file\] is the file's name) |
+	| Syntax          | Action                                                                                                  |
+	| --------------- | ------------------------------------------------------------------------------------------------------- |
+	| `atto`          | Shows help<br>![help image](./images/help.PNG)                                                          |
+	| `atto` \[file\] | Starts editor with the specified file,<br>does not have to exist<br>*where \[file\] is the file's name* |
 
 
 # Screenshots
