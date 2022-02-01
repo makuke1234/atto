@@ -13,4 +13,6 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include "attoProfiler.h"
+
 #endif

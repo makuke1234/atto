@@ -1,5 +1,4 @@
 #include "atto.h"
-#include "profiling.h"
 
 
 bool boolGet(uint8_t * restrict arr, size_t index)
@@ -112,6 +111,9 @@ bool atto_loop(attoData_t * restrict peditor)
 		if (keydown)
 		{
 			boolPut(keybuffer, key, true);
+			wchar_t tempstr[MAX_STATUS];
+			bool draw = true;
+
 			if (wVirtKey == VK_ESCAPE || key == sac_Ctrl_Q)	// Exit on Escape or Ctrl+Q
 			{
 				return false;
@@ -134,12 +136,11 @@ bool atto_loop(attoData_t * restrict peditor)
 					pfile->eolSeq = EOL_CR;
 					break;
 				default:
-					attoData_statusDraw(peditor, L"Unknown EOL combination!");
+					swprintf_s(tempstr, MAX_STATUS, L"Unknown EOL combination!");
 					done = false;
 				}
 				if (done)
 				{
-					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(
 						tempstr,
 						MAX_STATUS,
@@ -147,7 +148,6 @@ bool atto_loop(attoData_t * restrict peditor)
 						(pfile->eolSeq & EOL_CR) ? L"CR" : L"",
 						(pfile->eolSeq & EOL_LF) ? L"LF" : L""
 					);
-					attoData_statusDraw(peditor, tempstr);
 				}
 
 				waitingEnc = false;
@@ -157,11 +157,10 @@ bool atto_loop(attoData_t * restrict peditor)
 				const wchar_t * res;
 				if ((res = attoFile_read(pfile)) != NULL)
 				{
-					attoData_statusDraw(peditor, res);
+					swprintf_s(tempstr, MAX_STATUS, res);
 				}
 				else
 				{
-					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(
 						tempstr,
 						MAX_STATUS,
@@ -169,7 +168,6 @@ bool atto_loop(attoData_t * restrict peditor)
 						(pfile->eolSeq & EOL_CR) ? L"CR" : L"",
 						(pfile->eolSeq & EOL_LF) ? L"LF" : L""
 					);
-					attoData_statusDraw(peditor, tempstr);
 				}
 				attoData_refresh(peditor);
 			}
@@ -179,36 +177,30 @@ bool atto_loop(attoData_t * restrict peditor)
 				switch (saved)
 				{
 				case writeRes_nothingNew:
-					attoData_statusDraw(peditor, L"Nothing new to save");
+					swprintf_s(tempstr, MAX_STATUS, L"Nothing new to save");
 					break;
 				case writeRes_openError:
-					attoData_statusDraw(peditor, L"File open error!");
+					swprintf_s(tempstr, MAX_STATUS, L"File open error!");
 					break;
 				case writeRes_writeError:
-					attoData_statusDraw(peditor, L"File is write-protected!");
+					swprintf_s(tempstr, MAX_STATUS, L"File is write-protected!");
 					break;
 				case writeRes_memError:
-					attoData_statusDraw(peditor, L"Memory allocation error!");
+					swprintf_s(tempstr, MAX_STATUS, L"Memory allocation error!");
 					break;
 				default:
-				{
-					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"Wrote %d bytes.", saved);
-					attoData_statusDraw(peditor, tempstr);
-				}
 				}
 			}
 			else if (boolGet(keybuffer, sac_Ctrl_E) && !boolGet(prevkeybuffer, sac_Ctrl_E))
 			{
 				waitingEnc = true;
-				attoData_statusDraw(peditor, L"Waiting for EOL combination (F = CRLF, L = LF, C = CR)...");
+				swprintf_s(tempstr, MAX_STATUS, L"Waiting for EOL combination (F = CRLF, L = LF, C = CR)...");
 			}
 			// Normal keys
 			else if (key > sac_last_code)
 			{
-				wchar_t tempstr[MAX_STATUS];
 				swprintf_s(tempstr, MAX_STATUS, L"'%c' #%d", key, keyCount);
-				attoData_statusDraw(peditor, tempstr);
 				if (attoFile_addNormalCh(pfile, key))
 				{
 					attoData_refresh(peditor);
@@ -222,7 +214,7 @@ bool atto_loop(attoData_t * restrict peditor)
 				case VK_TAB:
 					if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
 					{
-						attoData_statusDraw(peditor, L"\u2191 + 'TAB'");
+						swprintf_s(tempstr, MAX_STATUS, L"\u2191 + 'TAB'");
 						wVirtKey = VK_OEM_BACKTAB;
 						break;
 					}
@@ -245,36 +237,32 @@ bool atto_loop(attoData_t * restrict peditor)
 						[VK_UP]     = L"\u2191",
 						[VK_DOWN]   = L"\u2193"
 					};
-					attoData_statusDraw(peditor, buf[wVirtKey]);
+					swprintf_s(tempstr, MAX_STATUS, buf[wVirtKey]);
 					break;
 				}
 				case VK_CAPITAL:
-				{
-					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'CAPS' %s", (GetKeyState(VK_CAPITAL) & 0x0001) ? L"On" : L"Off");
-					attoData_statusDraw(peditor, tempstr);
 					break;
-				}
 				case VK_NUMLOCK:
-				{
-					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'NUMLOCK' %s", (GetKeyState(VK_NUMLOCK) & 0x0001) ? L"On" : L"Off");
-					attoData_statusDraw(peditor, tempstr);
 					break;
-				}
 				case VK_SCROLL:
-				{
-					wchar_t tempstr[MAX_STATUS];
 					swprintf_s(tempstr, MAX_STATUS, L"'SCRLOCK' %s", (GetKeyState(VK_SCROLL) & 0x0001) ? L"On" : L"Off");
-					attoData_statusDraw(peditor, tempstr);
 					break;
+				default:
+					draw = false;
 				}
-				}
+
 
 				if (attoFile_addSpecialCh(pfile, wVirtKey))
 				{
 					attoData_refresh(peditor);
 				}
+			}
+			
+			if (draw)
+			{
+				attoData_statusDraw(peditor, tempstr);
 			}
 		}
 		else

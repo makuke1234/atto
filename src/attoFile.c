@@ -1,6 +1,5 @@
 #include "attoFile.h"
 #include "atto.h"
-#include "profiling.h"
 
 
 attoLineNode_t * attoLine_create(attoLineNode_t * restrict curnode, attoLineNode_t * restrict nextnode)

@@ -1,4 +1,4 @@
-#include "profiling.h"
+#include "attoProfiler.h"
 
 #if PROFILING_ENABLE == 1
 

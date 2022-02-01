@@ -1,5 +1,4 @@
 #include "atto.h"
-#include "profiling.h"
 
 static attoData_t editor;
 
