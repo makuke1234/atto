@@ -1,6 +1,6 @@
 CC=gcc
 WARN=-Wall -Wextra -Wpedantic -Wconversion -Wunused-variable -Wshadow -Wpointer-arith -Wcast-qual -Wstrict-prototypes -Wdouble-promotion -Waggregate-return
-CDEFFLAGS=-std=c99 $(WARN) -municode -m32 -D UNICODE -D _UNICODE
+CDEFFLAGS=-std=c99 $(WARN) -municode -D UNICODE -D _UNICODE
 CFLAGS=-O3 -Wl,--strip-all,--build-id=none,--gc-sections -fno-ident -D NDEBUG
 CFLAGSD=-g -O0 -D PROFILING_ENABLE=1
 

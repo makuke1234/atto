@@ -7,7 +7,7 @@
 ![C version](https://img.shields.io/badge/version-C99-blue.svg)
 
 Yet another text editor ought to be as simple/small as possible (following the KISS principle). It is purely written in C and
-it's designed to be used solely on Microsoft Windows (relies on Win32 API). MinGW-32 GCC has been used as the compiler.
+it's designed to be used solely on Microsoft Windows (relies on Win32 API). MinGW GCC has been used as the compiler.
 
 Currently, my other tool [slocWin32](https://github.com/makuke1234/slocWin32) reports 1665 lines of code for this editor:
 
@@ -18,7 +18,7 @@ With profiling removed (-80 sloc), it amounts to only **1585** lines of code! Ve
 
 # Obtaining
 
-32-bit (x86) Windows binaries can be obtained [here](https://github.com/makuke1234/atto/releases).
+32-bit (x86) & 64-bit (x64) Windows binaries can be obtained [here](https://github.com/makuke1234/atto/releases).
 
 
 # Features
@@ -61,6 +61,7 @@ Currently a fixed number of features is supported:
 * 1.9
     * Fix bug in renderer with editor randomly freezing when inserting characters
         * *Renderer went into an infinite loop, if free space was 0 in line buffer*
+	* Add 64-bit version
 * 1.8
     * Add extra documentation
     * Add support for CR and CRLF line endings, LF is still supported
