@@ -56,17 +56,12 @@ static int curStackLen = 0;
 
 void profilerStart(void)
 {
-	if (curStackLen < PROFILER_STACK_SIZE)
-	{
-		profilerStack[curStackLen++] = clock();
-	}
+	assert(curStackLen < PROFILER_STACK_SIZE);
+	profilerStack[curStackLen++] = clock();
 }
 void profilerEnd(const char * funcName)
 {
-	if (curStackLen == 0)
-	{
-		return;
-	}
+	assert(curStackLen > 0);
 	--curStackLen;
 	writeProfiler(funcName, "Elapsed %.3f s", (double)(clock() - profilerStack[curStackLen]) / (double)CLOCKS_PER_SEC);
 }
