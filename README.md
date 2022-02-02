@@ -58,7 +58,10 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
-* 1.10
+* 2.1
+	* Make a version with removed profiler code, store the profiler version as a backup
+	* Also remove debug asserts from that 'cleaned' version
+* 2.0
     * Refactor and optimise codebase
 * 1.9
     * Fix bug in renderer with editor randomly freezing when inserting characters

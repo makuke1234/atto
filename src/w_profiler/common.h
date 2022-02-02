@@ -11,5 +11,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <assert.h>
+
+#include "attoProfiler.h"
 
 #endif

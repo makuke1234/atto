@@ -7,8 +7,9 @@ bool boolGet(uint8_t * restrict arr, size_t index)
 }
 void boolPut(uint8_t * restrict arr, size_t index, bool value)
 {
+	const size_t in1 = index / 8;
 	const uint8_t pattern = 0x01 << (index % 8);
-	value ? (arr[index / 8] |= pattern) : (arr[index / 8] &= (uint8_t)~pattern);
+	value ? (arr[in1] |= pattern) : (arr[in1] &= (uint8_t)~pattern);
 }
 
 int32_t i32Min(int32_t a, int32_t b)
@@ -252,6 +253,7 @@ bool atto_loop(attoData_t * restrict peditor)
 					draw = false;
 				}
 
+
 				if (attoFile_addSpecialCh(pfile, wVirtKey))
 				{
 					attoData_refresh(peditor);
@@ -336,8 +338,26 @@ void atto_updateScrbuf(attoData_t * restrict peditor)
 
 uint32_t atto_convToUnicode(const char * restrict utf8, int numBytes, wchar_t ** restrict putf16, uint32_t * restrict sz)
 {
+	if (numBytes == 0)
+	{
+		if (sz != NULL && *sz < 1)
+		{
+			*putf16 = realloc(*putf16, sizeof(wchar_t));
+		}
+		else if (*putf16 == NULL || sz == NULL)
+		{
+			*putf16 = malloc(sizeof(wchar_t));
+		}
+
+		if (*putf16 != NULL)
+		{
+			*putf16[0] = L'\0';
+		}
+
+		return 0;
+	}
 	// Query the needed size
-	uint32_t size = (numBytes == 0) ? 1 : (uint32_t)MultiByteToWideChar(
+	uint32_t size = (uint32_t)MultiByteToWideChar(
 		CP_UTF8,
 		MB_PRECOMPOSED,
 		utf8,
@@ -365,27 +385,40 @@ uint32_t atto_convToUnicode(const char * restrict utf8, int numBytes, wchar_t **
 		}
 	}
 
-	if (numBytes != 0)
-	{
-		// Make conversion
-		MultiByteToWideChar(
-			CP_UTF8,
-			MB_PRECOMPOSED,
-			utf8,
-			numBytes,
-			*putf16,
-			(int)size
-		);
-	}
-	else
-	{
-		(*putf16)[0] = L'\0';
-	}
+	// Make conversion
+	MultiByteToWideChar(
+		CP_UTF8,
+		MB_PRECOMPOSED,
+		utf8,
+		numBytes,
+		*putf16,
+		(int)size
+	);
 	return size;
 }
 uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char ** restrict putf8, uint32_t * restrict sz)
 {
-	uint32_t size = (numChars == 0) ? 1 : (uint32_t)WideCharToMultiByte(
+	if (numChars == 0)
+	{
+		if (sz != NULL && *sz < 1)
+		{
+			*putf8 = realloc(*putf8, sizeof(wchar_t));
+		}
+		else if (*putf8 == NULL || sz == NULL)
+		{
+			*putf8 = malloc(sizeof(wchar_t));
+		}
+
+		if (*putf8 != NULL)
+		{
+			*putf8[0] = L'\0';
+		}
+
+		return 0;
+	}
+	
+	// Quory the needed size
+	uint32_t size = (uint32_t)WideCharToMultiByte(
 		CP_UTF8,
 		0,
 		utf16,
@@ -417,27 +450,24 @@ uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char
 	}
 
 	// Convert
-	if (numChars != 0)
-	{
-		WideCharToMultiByte(
-			CP_UTF8,
-			0,
-			utf16,
-			numChars,
-			*putf8,
-			(int)size,
-			NULL,
-			NULL
-		);
-	}
-	else
-	{
-		(*putf8)[0] = '\0';
-	}
+	WideCharToMultiByte(
+		CP_UTF8,
+		0,
+		utf16,
+		numChars,
+		*putf8,
+		(int)size,
+		NULL,
+		NULL
+	);
 	return size;
 }
 uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** restrict lines, enum attoEOLsequence * restrict eolSeq)
 {
+	assert(utf16 != NULL);
+	assert(lines != NULL);
+	assert(eolSeq != NULL);
+
 	// Count number of newline characters (to count number of lines - 1)
 	uint32_t newlines = 1;
 	

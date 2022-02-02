@@ -98,7 +98,10 @@ attoLineNode_t * attoLine_createText(
 
 bool attoLine_getText(const attoLineNode_t * restrict self, wchar_t ** restrict text, uint32_t * restrict tarrsz)
 {
+	assert(text != NULL);
+
 	uint32_t totalLen = self->lineEndx - self->freeSpaceLen + 1;
+	writeProfiler("attoLine_getText", "Total length: %u characters", totalLen);
 
 	if (tarrsz != NULL && *tarrsz < totalLen)
 	{
@@ -141,8 +144,10 @@ bool attoLine_realloc(attoLineNode_t * restrict self)
 {
 	if (self->freeSpaceLen == ATTO_LNODE_DEFAULT_FREE)
 	{
+		writeProfiler("attoLine_realloc", "Reallocation succeeded");
 		return true;
 	}
+	writeProfiler("attoLine_realloc", "Reallocating line");
 	uint32_t totalLen = self->lineEndx - self->freeSpaceLen;
 	void * newmem = realloc(self->line, sizeof(wchar_t) * (totalLen + ATTO_LNODE_DEFAULT_FREE));
 	if (newmem == NULL)
@@ -162,6 +167,7 @@ bool attoLine_realloc(attoLineNode_t * restrict self)
 	self->lineEndx     = totalLen + ATTO_LNODE_DEFAULT_FREE;
 	self->freeSpaceLen = ATTO_LNODE_DEFAULT_FREE;
 
+	writeProfiler("attoLine_realloc", "Reallocation succeeded");
 	return true;
 }
 
@@ -173,6 +179,7 @@ bool attoLine_mergeNext(attoLineNode_t * restrict self, attoLineNode_t ** restri
 	}
 	
 	attoLineNode_t * restrict n = self->nextNode;
+
 	if (*ppcury == n)
 	{
 		*ppcury = self;
@@ -310,6 +317,7 @@ void attoFile_clearLines(attoFile_t * restrict self)
 }
 const wchar_t * attoFile_readBytes(attoFile_t * restrict self, char ** bytes, uint32_t * bytesLen)
 {
+	assert(bytesLen != NULL && "Pointer to length variable is mandatory!");
 	if (attoFile_open(self, NULL, false) == false)
 	{
 		return L"File opening error!";
@@ -355,13 +363,15 @@ const wchar_t * attoFile_read(attoFile_t * restrict self)
 
 	// Convert to UTF-16
 	wchar_t * utf16 = NULL;
-	uint32_t chars  = atto_convToUnicode(bytes, (int)size, &utf16, NULL);
+	uint32_t chars = atto_convToUnicode(bytes, (int)size, &utf16, NULL);
 	free(bytes);
 
 	if (utf16 == NULL)
 	{
 		return L"Unicode conversion error!";
 	}
+	writeProfiler("attoFile_read", "Converted %u bytes of character to %u UTF-16 characters.", size, chars);
+	writeProfiler("attoFile_read", "File UTF-16 contents \"%S\"", utf16);
 
 	// Convert tabs to spaces
 	atto_tabsToSpaces(&utf16, &chars);
@@ -373,6 +383,11 @@ const wchar_t * attoFile_read(attoFile_t * restrict self)
 	{
 		free(utf16);
 		return L"Line reading error!";
+	}
+	writeProfiler("attoFile_read", "Total of %u lines", numLines);
+	for (uint32_t i = 0; i < numLines; ++i)
+	{
+		writeProfiler("attoFile_read", "Line %d: \"%S\"", i, lines[i]);
 	}
 
 	attoFile_clearLines(self);
@@ -418,8 +433,10 @@ int32_t attoFile_write(attoFile_t * restrict self)
 	// Generate lines
 	wchar_t * lines = NULL, * line = NULL;
 	uint32_t linesCap = 0, linesLen = 0, lineCap = 0;
+	
 
 	attoLineNode_t * node = self->data.firstNode;
+
 
 	const uint8_t eolSeq = self->eolSeq;
 	bool isCRLF = (self->eolSeq == EOL_CRLF);
@@ -428,6 +445,7 @@ int32_t attoFile_write(attoFile_t * restrict self)
 	{
 		if (attoLine_getText(node, &line, &lineCap) == false)
 		{
+			writeProfiler("attoFile_write", "Failed to fetch line!");
 			if (line != NULL)
 			{
 				free(line);
@@ -440,7 +458,11 @@ int32_t attoFile_write(attoFile_t * restrict self)
 		}
 
 		uint32_t lineLen = (uint32_t)wcsnlen(line, lineCap);
+
+		writeProfiler("attoFile_write", "Got line with size of %u characters. Line contents: \"%S\"", lineLen, line);
+
 		uint32_t addnewline = (node->nextNode != NULL) ? 1 + isCRLF : 0;
+
 		uint32_t newLinesLen = linesLen + lineLen + addnewline;
 
 		// Add line to lines, concatenate \n character, if necessary
@@ -466,6 +488,8 @@ int32_t attoFile_write(attoFile_t * restrict self)
 
 			lines    = mem;
 			linesCap = newCap;
+
+			writeProfiler("attoFile_write", "Resized line string. New cap, length is %u, %u bytes.", linesCap, linesLen);
 		}
 
 		// Copy line
@@ -494,6 +518,8 @@ int32_t attoFile_write(attoFile_t * restrict self)
 	}
 	free(line);
 
+	writeProfiler("attoFile_write", "All file contents (%u): \"%S\"", linesLen, lines);
+
 	// Try to convert lines string to UTF-8
 	char * utf8 = NULL;
 	uint32_t utf8sz = 0;
@@ -508,14 +534,21 @@ int32_t attoFile_write(attoFile_t * restrict self)
 		return writeRes_memError;
 	}
 
+	writeProfiler("attoFile_write", "Converted UTF-16 string to UTF-8 string");
+	writeProfiler("attoFile_write", "UTF-8 contents: \"%s\"", utf8);
+
 	// Check if anything has changed, for that load original file again
 	char * compFile = NULL;
 	uint32_t compSize;
 	if (attoFile_readBytes(self, &compFile, &compSize) == NULL)
 	{
 		// Reading was successful
+		writeProfiler("attoFile_write", "Comparing strings: \"%s\" and \"%s\" with sizes %u and %u", utf8, compFile, utf8sz, compSize);
+
 		bool areEqual = strncmp(utf8, compFile, (size_t)u32Min(utf8sz, compSize)) == 0;
 		free(compFile);
+
+		writeProfiler("attoFile_write", "The strings in question are %s", areEqual ? "equal" : "not equal");
 
 		if (areEqual)
 		{
@@ -537,8 +570,11 @@ int32_t attoFile_write(attoFile_t * restrict self)
 		return writeRes_writeError;
 	}
 
+	writeProfiler("attoFile_write", "Opened file for writing");
+
 	// Try to write UTF-8 lines string to file
 	DWORD dwWritten;
+
 	// Write everything except the null terminator
 	BOOL res = WriteFile(
 		self->hFile,
@@ -555,6 +591,7 @@ int32_t attoFile_write(attoFile_t * restrict self)
 	// Do error checking
 	if (!res)
 	{
+		writeProfiler("attoFile_write", "Error writing to file");
 		return writeRes_writeError;
 	}
 	else
@@ -574,11 +611,16 @@ void attoFile_setConTitle(const attoFile_t * restrict self)
 
 bool attoFile_addNormalCh(attoFile_t * restrict self, wchar_t ch)
 {
+	assert(self->data.currentNode != NULL);
+	writeProfiler("attoFile_addNormalCh", "Add character %C", ch);
 	attoLineNode_t * node = self->data.currentNode;
+
 	if ((node->freeSpaceLen == 0) && !attoLine_realloc(node))
 	{
 		return false;
 	}
+
+	writeProfiler("attoFile_addNormalCh", "curx: %u, free: %u, end: %u", node->curx, node->freeSpaceLen, node->lineEndx);
 
 	node->line[node->curx] = ch;
 	++node->curx;
