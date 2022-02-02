@@ -297,10 +297,6 @@ void attoFile_clearLines(attoFile_t * restrict self)
 	self->data.firstNode   = NULL;
 	self->data.currentNode = NULL;
 	self->data.pcury       = NULL;
-	if (node == NULL)
-	{
-		return;
-	}
 	while (node != NULL)
 	{
 		attoLineNode_t * next = node->nextNode;
