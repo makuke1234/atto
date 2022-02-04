@@ -15,6 +15,9 @@ Currently, my other tool [slocWin32](https://github.com/makuke1234/slocWin32) re
 
 Very small indeed...
 
+If you are intereseted in a more feature-rich analogue of this editor, check out my other
+repository [femto](https://github.com/makuke1234/femto).
+
 
 # Obtaining
 
@@ -58,6 +61,8 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
+* 2.2
+	* Adopt tweaked status messages from [femto](https://github.com/makuke1234/femto)
 * 2.1
 	* Make a version with removed profiler code, store the profiler version as a backup
 	* Also remove debug asserts from that 'cleaned' version
@@ -69,7 +74,7 @@ Currently a fixed number of features is supported:
     * Add 64-bit version
 * 1.8
     * Add extra documentation
-    * Add support for CR and CRLF line endings, LF is still supported
+    * Add support for CR and CRLF EOL sequences, LF is still supported
     * Files are saved using CRLF by default
     * Add support for changing EOL sequneces
 * 1.7

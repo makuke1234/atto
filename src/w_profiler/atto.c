@@ -144,7 +144,7 @@ bool atto_loop(attoData_t * restrict peditor)
 					swprintf_s(
 						tempstr,
 						MAX_STATUS,
-						L"Using %s%s line endings.",
+						L"Using %s%s EOL sequences",
 						(pfile->eolSeq & EOL_CR) ? L"CR" : L"",
 						(pfile->eolSeq & EOL_LF) ? L"LF" : L""
 					);
@@ -164,7 +164,7 @@ bool atto_loop(attoData_t * restrict peditor)
 					swprintf_s(
 						tempstr,
 						MAX_STATUS,
-						L"File reloaded successfully! %s%s line endings.",
+						L"File reloaded successfully! %s%s EOL sequences",
 						(pfile->eolSeq & EOL_CR) ? L"CR" : L"",
 						(pfile->eolSeq & EOL_LF) ? L"LF" : L""
 					);
@@ -189,7 +189,7 @@ bool atto_loop(attoData_t * restrict peditor)
 					swprintf_s(tempstr, MAX_STATUS, L"Memory allocation error!");
 					break;
 				default:
-					swprintf_s(tempstr, MAX_STATUS, L"Wrote %d bytes.", saved);
+					swprintf_s(tempstr, MAX_STATUS, L"Wrote %d bytes", saved);
 				}
 			}
 			else if (boolGet(keybuffer, sac_Ctrl_E) && !boolGet(prevkeybuffer, sac_Ctrl_E))
