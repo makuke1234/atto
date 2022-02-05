@@ -114,11 +114,11 @@ bool atto_loop(attoData_t * restrict peditor)
 			wchar_t tempstr[MAX_STATUS];
 			bool draw = true;
 
-			if (wVirtKey == VK_ESCAPE || key == sac_Ctrl_Q)	// Exit on Escape or Ctrl+Q
+			if ((wVirtKey == VK_ESCAPE) || (key == sac_Ctrl_Q))	// Exit on Escape or Ctrl+Q
 			{
 				return false;
 			}
-			else if (waitingEnc)
+			else if (waitingEnc && (key != sac_Ctrl_E))
 			{
 				bool done = true;
 				switch (wVirtKey)
@@ -152,7 +152,7 @@ bool atto_loop(attoData_t * restrict peditor)
 
 				waitingEnc = false;
 			}
-			else if (boolGet(keybuffer, sac_Ctrl_R) && !boolGet(prevkeybuffer, sac_Ctrl_R))	// Reload file
+			else if ((key = sac_Ctrl_R) && !boolGet(prevkeybuffer, sac_Ctrl_R))	// Reload file
 			{
 				const wchar_t * res;
 				if ((res = attoFile_read(pfile)) != NULL)
@@ -171,7 +171,7 @@ bool atto_loop(attoData_t * restrict peditor)
 				}
 				attoData_refresh(peditor);
 			}
-			else if (boolGet(keybuffer, sac_Ctrl_S) && !boolGet(prevkeybuffer, sac_Ctrl_S))	// Save file
+			else if ((key = sac_Ctrl_S) && !boolGet(prevkeybuffer, sac_Ctrl_S))	// Save file
 			{
 				int32_t saved = attoFile_write(pfile);
 				switch (saved)
@@ -192,7 +192,7 @@ bool atto_loop(attoData_t * restrict peditor)
 					swprintf_s(tempstr, MAX_STATUS, L"Wrote %d bytes", saved);
 				}
 			}
-			else if (boolGet(keybuffer, sac_Ctrl_E) && !boolGet(prevkeybuffer, sac_Ctrl_E))
+			else if ((key = sac_Ctrl_E) && !boolGet(prevkeybuffer, sac_Ctrl_E))
 			{
 				waitingEnc = true;
 				swprintf_s(tempstr, MAX_STATUS, L"Waiting for EOL combination (F = CRLF, L = LF, C = CR)...");
