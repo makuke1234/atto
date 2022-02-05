@@ -61,6 +61,8 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
+* 2.3
+	* Tweak key behaviour, Ctrl+E doesn't have to be immediately released anymore
 * 2.2
 	* Adopt tweaked status messages from [femto](https://github.com/makuke1234/femto)
 * 2.1
