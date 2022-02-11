@@ -158,7 +158,7 @@ void attoFile_clearLines(attoFile_t * restrict self);
  * @param bytesLen Address of array length in bytes
  * @return const wchar_t* Error message, NULL on success
  */
-const wchar_t * attoFile_readBytes(attoFile_t * restrict self, char ** bytes, uint32_t * bytesLen);
+const wchar_t * attoFile_readBytes(attoFile_t * restrict self, char ** restrict bytes, uint32_t * restrict bytesLen);
 /**
  * @brief Opens file with last given filename, reads file contents to internal
  * structure, ready to be shown on screen

@@ -304,7 +304,7 @@ void attoFile_clearLines(attoFile_t * restrict self)
 		node = next;
 	}
 }
-const wchar_t * attoFile_readBytes(attoFile_t * restrict self, char ** bytes, uint32_t * bytesLen)
+const wchar_t * attoFile_readBytes(attoFile_t * restrict self, char ** restrict bytes, uint32_t * restrict bytesLen)
 {
 	if (attoFile_open(self, NULL, false) == false)
 	{
