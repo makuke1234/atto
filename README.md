@@ -18,6 +18,8 @@ Very small indeed...
 If you are intereseted in a more feature-rich analogue of this editor, check out my other
 repository [femto](https://github.com/makuke1234/femto).
 
+There also exists a separate deprecated [with_profiler](https://github.com/makuke1234/atto/tree/with_profiler) branch if you are interested in a version with debug logging.
+
 
 # Obtaining
 
