@@ -173,10 +173,7 @@ bool attoLine_mergeNext(attoLineNode_t * restrict self, attoLineNode_t ** restri
 	}
 	
 	attoLineNode_t * restrict n = self->nextNode;
-	if (*ppcury == n)
-	{
-		*ppcury = self;
-	}
+	*ppcury = (*ppcury == n) ? self : *ppcury;
 
 	// Allocate more memory for first line
 	void * linemem = realloc(
@@ -256,10 +253,7 @@ void attoFile_reset(attoFile_t * restrict self)
 }
 bool attoFile_open(attoFile_t * restrict self, const wchar_t * restrict fileName, bool writemode)
 {
-	if (fileName == NULL)
-	{
-		fileName = self->fileName;
-	}
+	fileName = (fileName == NULL) ? self->fileName : fileName;
 
 	// try to open file
 	self->hFile = CreateFileW(

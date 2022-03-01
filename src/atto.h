@@ -6,22 +6,6 @@
 
 #define MAX_STATUS 256
 
-/**
- * @brief Get value from compact boolean array
- * 
- * @param arr Pointer to array
- * @param index Item index
- * @return Item value
- */
-bool boolGet(uint8_t * restrict arr, size_t index);
-/**
- * @brief Put value to compact boolean array
- * 
- * @param arr Pointer to array
- * @param index Item index
- * @param value Item value
- */
-void boolPut(uint8_t * restrict arr, size_t index, bool value);
 
 int32_t i32Min(int32_t a, int32_t b);
 int32_t i32Max(int32_t a, int32_t b);

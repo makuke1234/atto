@@ -1,16 +1,6 @@
 #include "atto.h"
 
 
-bool boolGet(uint8_t * restrict arr, size_t index)
-{
-	return (arr[index / 8] & (0x01 << (index % 8))) != 0;
-}
-void boolPut(uint8_t * restrict arr, size_t index, bool value)
-{
-	const uint8_t pattern = 0x01 << (index % 8);
-	value ? (arr[index / 8] |= pattern) : (arr[index / 8] &= (uint8_t)~pattern);
-}
-
 int32_t i32Min(int32_t a, int32_t b)
 {
 	return (a < b) ? a : b;
@@ -79,14 +69,15 @@ bool atto_loop(attoData_t * restrict peditor)
 
 	INPUT_RECORD ir;
 	DWORD evRead;
-	if (!ReadConsoleInputW(peditor->conIn, &ir, 1, &evRead))
+	if (!ReadConsoleInputW(peditor->conIn, &ir, 1, &evRead) || !evRead)
 	{
 		return true;
 	}
-	if (evRead && (ir.EventType == KEY_EVENT))
+
+	FlushConsoleInputBuffer(peditor->conIn);
+	if (ir.EventType == KEY_EVENT)
 	{
-		static uint8_t keybuffer[32] = { 0 }, prevkeybuffer[32] = { 0 };
-		static wchar_t prevkey;
+		static wchar_t prevkey, prevwVirtKey;
 
 		static int keyCount = 1;
 		static bool waitingEnc = false;
@@ -97,23 +88,12 @@ bool atto_loop(attoData_t * restrict peditor)
 
 		if (keydown)
 		{
-			if (key == prevkey)
-			{
-				++keyCount;
-			}
-			else
-			{
-				keyCount = 1;
-			}
-		}
-
-		if (keydown)
-		{
-			boolPut(keybuffer, key, true);
+			keyCount = ((key == prevkey) && (wVirtKey == prevwVirtKey)) ? (keyCount + 1) : 1;
+	
 			wchar_t tempstr[MAX_STATUS];
 			bool draw = true;
 
-			if ((wVirtKey == VK_ESCAPE) || (key == sac_Ctrl_Q))	// Exit on Escape or Ctrl+Q
+			if (((wVirtKey == VK_ESCAPE) && (prevwVirtKey != VK_ESCAPE)) || ((key == sac_Ctrl_Q) && (key != sac_Ctrl_Q)))	// Exit on Escape or Ctrl+Q
 			{
 				return false;
 			}
@@ -135,7 +115,7 @@ bool atto_loop(attoData_t * restrict peditor)
 					pfile->eolSeq = EOL_CR;
 					break;
 				default:
-					swprintf_s(tempstr, MAX_STATUS, L"Unknown EOL combination!");
+					wcscpy_s(tempstr, MAX_STATUS, L"Unknown EOL combination!");
 					done = false;
 				}
 				if (done)
@@ -151,12 +131,12 @@ bool atto_loop(attoData_t * restrict peditor)
 
 				waitingEnc = false;
 			}
-			else if ((key == sac_Ctrl_R) && !boolGet(prevkeybuffer, sac_Ctrl_R))	// Reload file
+			else if ((key == sac_Ctrl_R) && (prevkey != sac_Ctrl_R))	// Reload file
 			{
 				const wchar_t * res;
 				if ((res = attoFile_read(pfile)) != NULL)
 				{
-					swprintf_s(tempstr, MAX_STATUS, res);
+					wcscpy_s(tempstr, MAX_STATUS, res);
 				}
 				else
 				{
@@ -170,31 +150,31 @@ bool atto_loop(attoData_t * restrict peditor)
 				}
 				attoData_refresh(peditor);
 			}
-			else if ((key == sac_Ctrl_S) && !boolGet(prevkeybuffer, sac_Ctrl_S))	// Save file
+			else if ((key == sac_Ctrl_S) && (prevkey != sac_Ctrl_S))	// Save file
 			{
 				int32_t saved = attoFile_write(pfile);
 				switch (saved)
 				{
 				case writeRes_nothingNew:
-					swprintf_s(tempstr, MAX_STATUS, L"Nothing new to save");
+					wcscpy_s(tempstr, MAX_STATUS, L"Nothing new to save");
 					break;
 				case writeRes_openError:
-					swprintf_s(tempstr, MAX_STATUS, L"File open error!");
+					wcscpy_s(tempstr, MAX_STATUS, L"File open error!");
 					break;
 				case writeRes_writeError:
-					swprintf_s(tempstr, MAX_STATUS, L"File is write-protected!");
+					wcscpy_s(tempstr, MAX_STATUS, L"File is write-protected!");
 					break;
 				case writeRes_memError:
-					swprintf_s(tempstr, MAX_STATUS, L"Memory allocation error!");
+					wcscpy_s(tempstr, MAX_STATUS, L"Memory allocation error!");
 					break;
 				default:
 					swprintf_s(tempstr, MAX_STATUS, L"Wrote %d bytes", saved);
 				}
 			}
-			else if ((key == sac_Ctrl_E) && !boolGet(prevkeybuffer, sac_Ctrl_E))
+			else if ((key == sac_Ctrl_E) && (prevkey != sac_Ctrl_E))
 			{
 				waitingEnc = true;
-				swprintf_s(tempstr, MAX_STATUS, L"Waiting for EOL combination (F = CRLF, L = LF, C = CR)...");
+				wcscpy_s(tempstr, MAX_STATUS, L"Waiting for EOL combination (F = CRLF, L = LF, C = CR)...");
 			}
 			// Normal keys
 			else if (key > sac_last_code)
@@ -213,7 +193,7 @@ bool atto_loop(attoData_t * restrict peditor)
 				case VK_TAB:
 					if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
 					{
-						swprintf_s(tempstr, MAX_STATUS, L"\u2191 + 'TAB'");
+						wcscpy_s(tempstr, MAX_STATUS, L"\u2191 + 'TAB'");
 						wVirtKey = VK_OEM_BACKTAB;
 						break;
 					}
@@ -236,17 +216,17 @@ bool atto_loop(attoData_t * restrict peditor)
 						[VK_UP]     = L"\u2191",
 						[VK_DOWN]   = L"\u2193"
 					};
-					swprintf_s(tempstr, MAX_STATUS, buf[wVirtKey]);
+					wcscpy_s(tempstr, MAX_STATUS, buf[wVirtKey]);
 					break;
 				}
 				case VK_CAPITAL:
-					swprintf_s(tempstr, MAX_STATUS, L"'CAPS' %s", (GetKeyState(VK_CAPITAL) & 0x0001) ? L"On" : L"Off");
+					wcscpy_s(tempstr, MAX_STATUS, (GetKeyState(VK_CAPITAL) & 0x0001) ? L"'CAPS' On" : L"'CAPS' Off");
 					break;
 				case VK_NUMLOCK:
-					swprintf_s(tempstr, MAX_STATUS, L"'NUMLOCK' %s", (GetKeyState(VK_NUMLOCK) & 0x0001) ? L"On" : L"Off");
+					wcscpy_s(tempstr, MAX_STATUS, (GetKeyState(VK_NUMLOCK) & 0x0001) ? L"'NUMLOCK' On" : L"'NUMLOCK' Off");
 					break;
 				case VK_SCROLL:
-					swprintf_s(tempstr, MAX_STATUS, L"'SCRLOCK' %s", (GetKeyState(VK_SCROLL) & 0x0001) ? L"On" : L"Off");
+					wcscpy_s(tempstr, MAX_STATUS, (GetKeyState(VK_SCROLL) & 0x0001) ? L"'SCRLOCK' On" : L"'SCRLOCK' Off");
 					break;
 				default:
 					draw = false;
@@ -265,11 +245,11 @@ bool atto_loop(attoData_t * restrict peditor)
 		}
 		else
 		{
-			boolPut(keybuffer, key, false);
+			key = wVirtKey = 0;
 		}
+
 		prevkey = key;
-		memcpy(prevkeybuffer, keybuffer, 32 * sizeof(uint8_t));
-		FlushConsoleInputBuffer(peditor->conIn);
+		prevwVirtKey = wVirtKey;
 	}
 
 	return true;
@@ -287,13 +267,12 @@ void atto_updateScrbuf(attoData_t * restrict peditor)
 	{
 		pfile->data.curx = u32Max(1, pfile->data.currentNode->curx) - 1;
 	}
-	uint32_t size = peditor->scrbuf.w * peditor->scrbuf.h;
-	for (uint32_t i = 0; i < size; ++i)
+	for (uint32_t i = 0, size = peditor->scrbuf.w * peditor->scrbuf.h; i < size; ++i)
 	{
 		peditor->scrbuf.mem[i] = L' ';
 	}
 	attoLineNode_t * node = pfile->data.pcury;
-	for (uint32_t i = 0; i < peditor->scrbuf.h - 1 && node != NULL; ++i)
+	for (uint32_t i = 0, h1 = peditor->scrbuf.h - 1; i < h1 && node != NULL; ++i)
 	{
 		// if line is active line
 		if (node == pfile->data.currentNode)

@@ -9,7 +9,7 @@
 Yet another text editor ought to be as simple/small as possible (following the KISS principle). It is purely written in C and
 it's designed to be used solely on Microsoft Windows (relies on Win32 API). MinGW GCC has been used as the compiler.
 
-Currently, my other tool [slocWin32](https://github.com/makuke1234/slocWin32) reports only **1513** lines of code for this editor:
+Currently, my other tool [slocWin32](https://github.com/makuke1234/slocWin32) reports only **1481** lines of code for this editor:
 
 ![SLOC](./images/sloc.png)
 
@@ -63,6 +63,9 @@ Currently a fixed number of features is supported:
 
 # Changelog
 
+* 2.4
+	* Optimise keyboard key-checker
+	* De-bloat code
 * 2.3
 	* Tweak key behaviour, Ctrl+E doesn't have to be immediately released anymore
 * 2.2
