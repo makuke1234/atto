@@ -64,8 +64,8 @@ Currently a fixed number of features is supported:
 # Changelog
 
 * 2.4
-	* Optimise keyboard key-checker
-	* De-bloat code
+	* Optimised keyboard key-checker
+	* De-bloated code
 * 2.3
 	* Tweak key behaviour, Ctrl+E doesn't have to be immediately released anymore
 * 2.2
