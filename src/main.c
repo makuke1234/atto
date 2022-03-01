@@ -7,6 +7,9 @@ int wmain(int argc, const wchar_t * argv[])
 	atto_exitHandlerSetVars(&editor);
 	attoData_reset(&editor);
 
+	// Initialise profiler, if applicable
+	initProfiler();
+
 	const wchar_t * fileName = atto_getFileName(argc, argv);
 	if (fileName == NULL)
 	{
@@ -31,6 +34,7 @@ int wmain(int argc, const wchar_t * argv[])
 	}
 
 	const wchar_t * res;
+	writeProfiler("wmain", "Starting to read file...");
 	if ((res = attoFile_read(&editor.file)) != NULL)
 	{
 		attoData_statusDraw(&editor, res);
