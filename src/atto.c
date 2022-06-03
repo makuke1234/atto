@@ -140,7 +140,7 @@ bool atto_loop(aData_t * restrict peditor)
 			else if ((key == sacCTRL_R) && (prevkey != sacCTRL_R))	// Reload file
 			{
 				const wchar * res;
-				if ((res = attoFile_read(pfile)) != NULL)
+				if ((res = aFile_read(pfile)) != NULL)
 				{
 					wcscpy_s(tempstr, MAX_STATUS, res);
 				}
@@ -158,7 +158,7 @@ bool atto_loop(aData_t * restrict peditor)
 			}
 			else if ((key == sacCTRL_S) && (prevkey != sacCTRL_S))	// Save file
 			{
-				const isize saved = attoFile_write(pfile);
+				const isize saved = aFile_write(pfile);
 				switch (saved)
 				{
 				case afwrNOTHING_NEW:
@@ -186,7 +186,7 @@ bool atto_loop(aData_t * restrict peditor)
 			else if (key > sacLAST_CODE)
 			{
 				swprintf_s(tempstr, MAX_STATUS, L"'%c' #%u", key, keyCount);
-				if (attoFile_addNormalCh(pfile, key))
+				if (aFile_addNormalCh(pfile, key))
 				{
 					aData_refresh(peditor);
 				}
@@ -238,7 +238,7 @@ bool atto_loop(aData_t * restrict peditor)
 					draw = false;
 				}
 
-				if (attoFile_addSpecialCh(pfile, wVirtKey))
+				if (aFile_addSpecialCh(pfile, wVirtKey))
 				{
 					aData_refresh(peditor);
 				}
@@ -263,7 +263,7 @@ bool atto_loop(aData_t * restrict peditor)
 void atto_updateScrbuf(aData_t * restrict peditor)
 {
 	aFile_t * restrict pfile = &peditor->file;
-	attoFile_updateCury(pfile, peditor->scrbuf.h - 2);
+	aFile_updateCury(pfile, peditor->scrbuf.h - 2);
 	isize delta = (isize)pfile->data.currentNode->curx - (isize)peditor->scrbuf.w - (isize)pfile->data.curx;
 	if (delta >= 0)
 	{

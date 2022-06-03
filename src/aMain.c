@@ -14,15 +14,15 @@ int wmain(int argc, const wchar * argv[])
 		return 1;
 	}
 
-	if (!attoFile_open(&editor.file, fileName, false))
+	if (!aFile_open(&editor.file, fileName, false))
 	{
 		atto_printErr(aerrFILE);
 		return 2;
 	}
-	attoFile_close(&editor.file);
+	aFile_close(&editor.file);
 
 	// Set console title
-	attoFile_setConTitle(&editor.file);
+	aFile_setConTitle(&editor.file);
 
 	if (!aData_init(&editor))
 	{
@@ -31,7 +31,7 @@ int wmain(int argc, const wchar * argv[])
 	}
 
 	const wchar * res;
-	if ((res = attoFile_read(&editor.file)) != NULL)
+	if ((res = aFile_read(&editor.file)) != NULL)
 	{
 		aData_statusDraw(&editor, res);
 	}

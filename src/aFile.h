@@ -28,7 +28,7 @@ typedef struct aLine
  * @param nextnode Pointer to next line node, can be NULL
  * @return aLine_t* Pointer to newly created line node, NULL on failure
  */
-aLine_t * attoLine_create(aLine_t * restrict curnode, aLine_t * restrict nextnode);
+aLine_t * aLine_create(aLine_t * restrict curnode, aLine_t * restrict nextnode);
 /**
  * @brief Creates new line in-between current line and next line
  * 
@@ -40,7 +40,7 @@ aLine_t * attoLine_create(aLine_t * restrict curnode, aLine_t * restrict nextnod
  * can be -1, if string is null-terminated
  * @return aLine_t* Pointer to newly created line node, NULL on failure
  */
-aLine_t * attoLine_createText(
+aLine_t * aLine_createText(
 	aLine_t * restrict curnode,
 	aLine_t * restrict nextnode,
 	const wchar * restrict lineText,
@@ -58,7 +58,7 @@ aLine_t * attoLine_createText(
  * @return true Success
  * @return false Failure
  */
-bool attoLine_getText(const aLine_t * restrict self, wchar ** restrict text, usize * restrict tarrsz);
+bool aLine_getText(const aLine_t * restrict self, wchar ** restrict text, usize * restrict tarrsz);
 /**
  * @brief Reallocates free space on given line node, guarantees
  * ATTO_LNODE_DEFAULT_FREE characters for space
@@ -67,7 +67,7 @@ bool attoLine_getText(const aLine_t * restrict self, wchar ** restrict text, usi
  * @return true Success
  * @return false Failure
  */
-bool attoLine_realloc(aLine_t * restrict self);
+bool aLine_realloc(aLine_t * restrict self);
 
 /**
  * @brief Merges current line node with next line node, adjusts current
@@ -78,7 +78,7 @@ bool attoLine_realloc(aLine_t * restrict self);
  * @return true Success
  * @return false Failure
  */
-bool attoLine_mergeNext(aLine_t * restrict self, aLine_t ** restrict ppcury);
+bool aLine_mergeNext(aLine_t * restrict self, aLine_t ** restrict ppcury);
 
 /**
  * @brief Moves (internal) cursor on current line node, clamps movement
@@ -87,14 +87,14 @@ bool attoLine_mergeNext(aLine_t * restrict self, aLine_t ** restrict ppcury);
  * @param delta Amount of characters to move, positive values to move right,
  * negative values to move left
  */
-void attoLine_moveCursor(aLine_t * restrict self, isize delta);
+void aLine_moveCursor(aLine_t * restrict self, isize delta);
 
 /**
  * @brief Destroys line node, frees memory
  * 
  * @param self Pointer to line node
  */
-void attoLine_destroy(aLine_t * restrict self);
+void aLine_destroy(aLine_t * restrict self);
 
 typedef enum eolSequence
 {
@@ -129,7 +129,7 @@ typedef struct aFile
  * 
  * @param self Pointer to aFile_t structure
  */
-void attoFile_reset(aFile_t * restrict self);
+void aFile_reset(aFile_t * restrict self);
 /**
  * @brief Opens new file with desired name and write access
  * 
@@ -140,19 +140,19 @@ void attoFile_reset(aFile_t * restrict self);
  * @return true Success
  * @return false Failure
  */
-bool attoFile_open(aFile_t * restrict self, const wchar * restrict selfName, bool writemode);
+bool aFile_open(aFile_t * restrict self, const wchar * restrict selfName, bool writemode);
 /**
  * @brief Closes open file if possible
  * 
  * @param self Pointer to aFile_t structure
  */
-void attoFile_close(aFile_t * restrict self);
+void aFile_close(aFile_t * restrict self);
 /**
  * @brief Clears (internal) lines in editor data structure
  * 
  * @param self Pointer to aFile_t structure
  */
-void attoFile_clearLines(aFile_t * restrict self);
+void aFile_clearLines(aFile_t * restrict self);
 /**
  * @brief Opens file with last given filename, reads bytes to an array, allocates
  * memory only if *bytes is too small
@@ -162,7 +162,7 @@ void attoFile_clearLines(aFile_t * restrict self);
  * @param bytesLen Address of array length in bytes
  * @return const wchar* Error message, NULL on success
  */
-const wchar * attoFile_readBytes(aFile_t * restrict self, char ** restrict bytes, usize * restrict bytesLen);
+const wchar * aFile_readBytes(aFile_t * restrict self, char ** restrict bytes, usize * restrict bytesLen);
 /**
  * @brief Opens file with last given filename, reads file contents to internal
  * structure, ready to be shown on screen
@@ -170,7 +170,7 @@ const wchar * attoFile_readBytes(aFile_t * restrict self, char ** restrict bytes
  * @param self Pointer to aFile_t structure
  * @return const wchar* Error message, NULL on success
  */
-const wchar * attoFile_read(aFile_t * restrict self);
+const wchar * aFile_read(aFile_t * restrict self);
 
 typedef enum aFile_writeRes
 {
@@ -189,14 +189,14 @@ typedef enum aFile_writeRes
  * @return isize Negative values represent error code, positive values (0 inclusive)
  * represent number of bytes written to disc
  */
-isize attoFile_write(aFile_t * restrict self);
+isize aFile_write(aFile_t * restrict self);
 /**
  * @brief Set console title according to last given filename, also shows
  * editor name on the titlebar
  * 
  * @param self Pointer to aFile_t structure
  */
-void attoFile_setConTitle(const aFile_t * restrict self);
+void aFile_setConTitle(const aFile_t * restrict self);
 
 /**
  * @brief Inserts a normal character to current line
@@ -206,7 +206,7 @@ void attoFile_setConTitle(const aFile_t * restrict self);
  * @return true Success
  * @return false Failure
  */
-bool attoFile_addNormalCh(aFile_t * restrict self, wchar ch);
+bool aFile_addNormalCh(aFile_t * restrict self, wchar ch);
 /**
  * @brief Inserts a special character to current line
  * 
@@ -215,7 +215,7 @@ bool attoFile_addNormalCh(aFile_t * restrict self, wchar ch);
  * @return true Success
  * @return false Failure
  */
-bool attoFile_addSpecialCh(aFile_t * restrict self, wchar ch);
+bool aFile_addSpecialCh(aFile_t * restrict self, wchar ch);
 
 /**
  * @brief Checks current line contents for matching string
@@ -227,7 +227,7 @@ bool attoFile_addSpecialCh(aFile_t * restrict self, wchar ch);
  * @return true Found a match
  * @return false Didn't find any match
  */
-bool attoFile_checkLineAt(const aFile_t * restrict self, isize maxdelta, const wchar * restrict string, usize maxString);
+bool aFile_checkLineAt(const aFile_t * restrict self, isize maxdelta, const wchar * restrict string, usize maxString);
 /**
  * @brief Deletes a character on current line going forward (right, cursor stationary),
  * merges with the next line (if possible), if cursor is already at the end of the line
@@ -236,7 +236,7 @@ bool attoFile_checkLineAt(const aFile_t * restrict self, isize maxdelta, const w
  * @return true Success
  * @return false Failure
  */
-bool attoFile_deleteForward(aFile_t * restrict self);
+bool aFile_deleteForward(aFile_t * restrict self);
 /**
  * @brief Deletes a character on current line going backwards (left, cursor also move to the left),
  * merges with and move to the the previous line (if possible), if cursor is
@@ -246,7 +246,7 @@ bool attoFile_deleteForward(aFile_t * restrict self);
  * @return true Success
  * @return false Failure
  */
-bool attoFile_deleteBackward(aFile_t * restrict self);
+bool aFile_deleteBackward(aFile_t * restrict self);
 /**
  * @brief Adds a new line after current active line
  * 
@@ -254,21 +254,21 @@ bool attoFile_deleteBackward(aFile_t * restrict self);
  * @return true Success
  * @return false Failure
  */
-bool attoFile_addNewLine(aFile_t * restrict self);
+bool aFile_addNewLine(aFile_t * restrict self);
 /**
  * @brief Updates current viewpoint if necessary, shifts view vertically
  * 
  * @param self Pointer to aFile_t structure
  * @param height Editor window height
  */
-void attoFile_updateCury(aFile_t * restrict self, u32 height);
+void aFile_updateCury(aFile_t * restrict self, u32 height);
 
 /**
  * @brief Destroys aFile_t structure
  * 
  * @param self Pointer to aFile_t structure
  */
-void attoFile_destroy(aFile_t * restrict self);
+void aFile_destroy(aFile_t * restrict self);
 
 
 #endif

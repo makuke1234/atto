@@ -15,7 +15,7 @@ void aData_reset(aData_t * restrict self)
 		},
 		.cursorpos = { 0, 0 }
 	};
-	attoFile_reset(&self->file);
+	aFile_reset(&self->file);
 }
 bool aData_init(aData_t * restrict self)
 {
@@ -129,5 +129,5 @@ void aData_destroy(aData_t * restrict self)
 	{
 		SetConsoleActiveScreenBuffer(self->conOut);
 	}
-	attoFile_destroy(&self->file);
+	aFile_destroy(&self->file);
 }
