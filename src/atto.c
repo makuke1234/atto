@@ -1,70 +1,77 @@
 #include "atto.h"
 
 
-int32_t i32Min(int32_t a, int32_t b)
+i32 min_i32(i32 a, i32 b)
 {
 	return (a < b) ? a : b;
 }
-int32_t i32Max(int32_t a, int32_t b)
+i32 max_i32(i32 a, i32 b)
 {
 	return (a < b) ? b : a;
 }
-uint32_t u32Min(uint32_t a, uint32_t b)
+u32 min_u32(u32 a, u32 b)
 {
 	return (a < b) ? a : b;
 }
-uint32_t u32Max(uint32_t a, uint32_t b)
+u32 max_u32(u32 a, u32 b)
+{
+	return (a < b) ? b : a;
+}
+
+usize min_usize(usize a, usize b)
+{
+	return (a < b) ? a : b;
+}
+usize max_usize(usize a, usize b)
 {
 	return (a < b) ? b : a;
 }
 
 
-static attoData_t * s_atExitData = NULL;
 
-void atto_exitHandlerSetVars(attoData_t * pdata)
+static aData_t * s_atExitData = NULL;
+
+void atto_exitHandlerSetVars(aData_t * restrict pdata)
 {
 	s_atExitData = pdata;
 }
 void atto_exitHandler(void)
 {
 	// Clear resources
-	attoData_destroy(s_atExitData);
+	aData_destroy(s_atExitData);
 }
 
-const wchar_t * atto_getFileName(int argc, const wchar_t * const * const argv)
+const wchar * atto_getFileName(int argc, const wchar * const * const restrict argv)
 {
 	return (argc > 1) ? argv[1] : NULL;
 }
-void atto_printHelp(const wchar_t * restrict app)
+void atto_printHelp(const wchar * restrict app)
 {
 	fwprintf(stderr, L"Correct usage:\n%S [file]\n", app);
 }
 
-static const char * atto_errCodes[attoE_num_of_elems] = {
+static const char * atto_errCodes[aerrNUM_OF_ELEMS] = {
 	"Uknown error occurred!",
 	"Error reading file!",
 	"Error initialising window!"
 };
-void atto_printErr(enum attoErr errCode)
+void atto_printErr(aErr_e errCode)
 {
-	if (errCode >= attoE_num_of_elems)
-	{
-		errCode = attoE_unknown;
-	}
+	errCode = (errCode >= aerrNUM_OF_ELEMS) ? aerrUNKNOWN : errCode;
 	fprintf(stderr, "%s\n", atto_errCodes[errCode]);
 }
 
-bool atto_loop(attoData_t * restrict peditor)
+bool atto_loop(aData_t * restrict peditor)
 {
-	attoFile_t * restrict pfile = &peditor->file;
-	enum SpecialAsciiCodes
+	aFile_t * restrict pfile = &peditor->file;
+	enum specialASCIIcodes
 	{
-		sac_Ctrl_Q = 17,
-		sac_Ctrl_R = 18,
-		sac_Ctrl_S = 19,
-		sac_Ctrl_E = 5,
+		sacCTRL_Q = 17,
+		sacCTRL_R = 18,
+		sacCTRL_S = 19,
+		sacCTRL_E = 5,
 
-		sac_last_code = 31
+		sacLAST_CODE = 31
 	};
 
 	INPUT_RECORD ir;
@@ -74,45 +81,44 @@ bool atto_loop(attoData_t * restrict peditor)
 		return true;
 	}
 
-	FlushConsoleInputBuffer(peditor->conIn);
 	if (ir.EventType == KEY_EVENT)
 	{
-		static wchar_t prevkey, prevwVirtKey;
+		static wchar prevkey, prevwVirtKey;
 
-		static int keyCount = 1;
+		static u32 keyCount = 1;
 		static bool waitingEnc = false;
 
-		wchar_t key      = ir.Event.KeyEvent.uChar.UnicodeChar;
-		wchar_t wVirtKey = ir.Event.KeyEvent.wVirtualKeyCode;
-		bool keydown     = ir.Event.KeyEvent.bKeyDown != 0;
+		wchar key      = ir.Event.KeyEvent.uChar.UnicodeChar;
+		wchar wVirtKey = ir.Event.KeyEvent.wVirtualKeyCode;
+		const bool keydown = ir.Event.KeyEvent.bKeyDown != 0;
 
 		if (keydown)
 		{
 			keyCount = ((key == prevkey) && (wVirtKey == prevwVirtKey)) ? (keyCount + 1) : 1;
 	
-			wchar_t tempstr[MAX_STATUS];
+			wchar tempstr[MAX_STATUS];
 			bool draw = true;
 
-			if (((wVirtKey == VK_ESCAPE) && (prevwVirtKey != VK_ESCAPE)) || ((key == sac_Ctrl_Q) && (key != sac_Ctrl_Q)))	// Exit on Escape or Ctrl+Q
+			if (((wVirtKey == VK_ESCAPE) && (prevwVirtKey != VK_ESCAPE)) || ((key == sacCTRL_Q) && (key != sacCTRL_Q)))	// Exit on Escape or Ctrl+Q
 			{
 				return false;
 			}
-			else if (waitingEnc && (key != sac_Ctrl_E))
+			else if (waitingEnc && (key != sacCTRL_E))
 			{
 				bool done = true;
 				switch (wVirtKey)
 				{
 				// CRLF
 				case L'F':
-					pfile->eolSeq = EOL_CRLF;
+					pfile->eolSeq = eolCRLF;
 					break;
 				// LF
 				case L'L':
-					pfile->eolSeq = EOL_LF;
+					pfile->eolSeq = eolLF;
 					break;
 				// CR
 				case L'C':
-					pfile->eolSeq = EOL_CR;
+					pfile->eolSeq = eolCR;
 					break;
 				default:
 					wcscpy_s(tempstr, MAX_STATUS, L"Unknown EOL combination!");
@@ -124,16 +130,16 @@ bool atto_loop(attoData_t * restrict peditor)
 						tempstr,
 						MAX_STATUS,
 						L"Using %s%s EOL sequences",
-						(pfile->eolSeq & EOL_CR) ? L"CR" : L"",
-						(pfile->eolSeq & EOL_LF) ? L"LF" : L""
+						(pfile->eolSeq & eolCR) ? L"CR" : L"",
+						(pfile->eolSeq & eolLF) ? L"LF" : L""
 					);
 				}
 
 				waitingEnc = false;
 			}
-			else if ((key == sac_Ctrl_R) && (prevkey != sac_Ctrl_R))	// Reload file
+			else if ((key == sacCTRL_R) && (prevkey != sacCTRL_R))	// Reload file
 			{
-				const wchar_t * res;
+				const wchar * res;
 				if ((res = attoFile_read(pfile)) != NULL)
 				{
 					wcscpy_s(tempstr, MAX_STATUS, res);
@@ -144,45 +150,45 @@ bool atto_loop(attoData_t * restrict peditor)
 						tempstr,
 						MAX_STATUS,
 						L"File reloaded successfully! %s%s EOL sequences",
-						(pfile->eolSeq & EOL_CR) ? L"CR" : L"",
-						(pfile->eolSeq & EOL_LF) ? L"LF" : L""
+						(pfile->eolSeq & eolCR) ? L"CR" : L"",
+						(pfile->eolSeq & eolLF) ? L"LF" : L""
 					);
 				}
-				attoData_refresh(peditor);
+				aData_refresh(peditor);
 			}
-			else if ((key == sac_Ctrl_S) && (prevkey != sac_Ctrl_S))	// Save file
+			else if ((key == sacCTRL_S) && (prevkey != sacCTRL_S))	// Save file
 			{
-				int32_t saved = attoFile_write(pfile);
+				const isize saved = attoFile_write(pfile);
 				switch (saved)
 				{
-				case writeRes_nothingNew:
+				case afwrNOTHING_NEW:
 					wcscpy_s(tempstr, MAX_STATUS, L"Nothing new to save");
 					break;
-				case writeRes_openError:
+				case afwrOPEN_ERROR:
 					wcscpy_s(tempstr, MAX_STATUS, L"File open error!");
 					break;
-				case writeRes_writeError:
+				case afwrWRITE_ERROR:
 					wcscpy_s(tempstr, MAX_STATUS, L"File is write-protected!");
 					break;
-				case writeRes_memError:
+				case afwrMEM_ERROR:
 					wcscpy_s(tempstr, MAX_STATUS, L"Memory allocation error!");
 					break;
 				default:
-					swprintf_s(tempstr, MAX_STATUS, L"Wrote %d bytes", saved);
+					swprintf_s(tempstr, MAX_STATUS, L"Wrote %zd bytes", saved);
 				}
 			}
-			else if ((key == sac_Ctrl_E) && (prevkey != sac_Ctrl_E))
+			else if ((key == sacCTRL_E) && (prevkey != sacCTRL_E))
 			{
 				waitingEnc = true;
 				wcscpy_s(tempstr, MAX_STATUS, L"Waiting for EOL combination (F = CRLF, L = LF, C = CR)...");
 			}
 			// Normal keys
-			else if (key > sac_last_code)
+			else if (key > sacLAST_CODE)
 			{
-				swprintf_s(tempstr, MAX_STATUS, L"'%c' #%d", key, keyCount);
+				swprintf_s(tempstr, MAX_STATUS, L"'%c' #%u", key, keyCount);
 				if (attoFile_addNormalCh(pfile, key))
 				{
-					attoData_refresh(peditor);
+					aData_refresh(peditor);
 				}
 			}
 			// Special keys
@@ -206,7 +212,7 @@ bool atto_loop(attoData_t * restrict peditor)
 				case VK_UP:		// Up arrow
 				case VK_DOWN:	// Down arrow
 				{
-					static const wchar_t * buf[] = {
+					static const wchar * buf[] = {
 						[VK_TAB]    = L"'TAB'",
 						[VK_RETURN] = L"'RET'",
 						[VK_BACK]   = L"'BS'",
@@ -234,13 +240,13 @@ bool atto_loop(attoData_t * restrict peditor)
 
 				if (attoFile_addSpecialCh(pfile, wVirtKey))
 				{
-					attoData_refresh(peditor);
+					aData_refresh(peditor);
 				}
 			}
 			
 			if (draw)
 			{
-				attoData_statusDraw(peditor, tempstr);
+				aData_statusDraw(peditor, tempstr);
 			}
 		}
 		else
@@ -254,40 +260,43 @@ bool atto_loop(attoData_t * restrict peditor)
 
 	return true;
 }
-void atto_updateScrbuf(attoData_t * restrict peditor)
+void atto_updateScrbuf(aData_t * restrict peditor)
 {
-	attoFile_t * restrict pfile = &peditor->file;
+	aFile_t * restrict pfile = &peditor->file;
 	attoFile_updateCury(pfile, peditor->scrbuf.h - 2);
-	int32_t delta = (int32_t)pfile->data.currentNode->curx - (int32_t)peditor->scrbuf.w - (int32_t)pfile->data.curx;
+	isize delta = (isize)pfile->data.currentNode->curx - (isize)peditor->scrbuf.w - (isize)pfile->data.curx;
 	if (delta >= 0)
 	{
-		pfile->data.curx += (uint32_t)(delta + 1);
+		pfile->data.curx += (usize)(delta + 1);
 	}
 	else if (pfile->data.curx > pfile->data.currentNode->curx)
 	{
-		pfile->data.curx = u32Max(1, pfile->data.currentNode->curx) - 1;
+		pfile->data.curx = max_usize(1, pfile->data.currentNode->curx) - 1;
 	}
-	for (uint32_t i = 0, size = peditor->scrbuf.w * peditor->scrbuf.h; i < size; ++i)
+	for (usize i = 0, size = (usize)peditor->scrbuf.w * (usize)peditor->scrbuf.h; i < size; ++i)
 	{
 		peditor->scrbuf.mem[i] = L' ';
 	}
-	attoLineNode_t * node = pfile->data.pcury;
-	for (uint32_t i = 0, h1 = peditor->scrbuf.h - 1; i < h1 && node != NULL; ++i)
+	aLine_t * node = pfile->data.pcury;
+	for (u32 i = 0, h1 = peditor->scrbuf.h - 1; i < h1 && node != NULL; ++i)
 	{
 		// if line is active line
 		if (node == pfile->data.currentNode)
 		{
 			// Update cursor position
-			peditor->cursorpos = (COORD){ .X = (int16_t)u32Min(node->curx - pfile->data.curx, peditor->scrbuf.w - 1), .Y = (int16_t)i };
+			peditor->cursorpos = (COORD){
+				.X = (SHORT)min_usize(node->curx - pfile->data.curx, (usize)peditor->scrbuf.w - 1),
+				.Y = (SHORT)i
+			};
 			SetConsoleCursorPosition(peditor->scrbuf.handle, peditor->cursorpos);
 		}
-		wchar_t * destination = &peditor->scrbuf.mem[i * peditor->scrbuf.w];
+		wchar * restrict destination = &peditor->scrbuf.mem[(usize)i * (usize)peditor->scrbuf.w];
 
 		// Drawing
 
 		// Advance idx by file.data.curx
-		uint32_t idx = 0;
-		for (uint32_t j = pfile->data.curx; j > 0 && idx < node->lineEndx;)
+		usize idx = 0;
+		for (usize j = pfile->data.curx; j > 0 && idx < node->lineEndx;)
 		{
 			if (idx == node->curx && node->freeSpaceLen > 0)
 			{
@@ -297,7 +306,7 @@ void atto_updateScrbuf(attoData_t * restrict peditor)
 			++idx;
 			--j;
 		}
-		for (uint32_t j = 0; idx < node->lineEndx && j < peditor->scrbuf.w;)
+		for (usize j = 0; idx < node->lineEndx && j < peditor->scrbuf.w;)
 		{
 			if (idx == node->curx && node->freeSpaceLen > 0)
 			{
@@ -313,10 +322,10 @@ void atto_updateScrbuf(attoData_t * restrict peditor)
 	}
 }
 
-uint32_t atto_convToUnicode(const char * restrict utf8, int numBytes, wchar_t ** restrict putf16, uint32_t * restrict sz)
+u32 atto_toutf16(const char * restrict utf8, int numBytes, wchar ** restrict putf16, usize * restrict sz)
 {
 	// Query the needed size
-	uint32_t size = (numBytes == 0) ? 1 : (uint32_t)MultiByteToWideChar(
+	const u32 size = (numBytes == 0) ? 1 : (u32)MultiByteToWideChar(
 		CP_UTF8,
 		MB_PRECOMPOSED,
 		utf8,
@@ -325,19 +334,19 @@ uint32_t atto_convToUnicode(const char * restrict utf8, int numBytes, wchar_t **
 		0
 	);
 	// Try to allocate memory
-	if (sz != NULL && *sz < size)
+	if ((sz != NULL) && (*sz < (usize)size))
 	{
-		void * mem = realloc(*putf16, size * sizeof(wchar_t));
+		vptr mem = realloc(*putf16, (usize)size * sizeof(wchar));
 		if (mem == NULL)
 		{
 			return 0;
 		}
 		*putf16 = mem;
-		*sz     = size;
+		*sz     = (usize)size;
 	}
-	else if (*putf16 == NULL || sz == NULL)
+	else if ((*putf16 == NULL) || (sz == NULL))
 	{
-		*putf16 = malloc(size * sizeof(wchar_t));
+		*putf16 = malloc((usize)size * sizeof(wchar));
 		if (*putf16 == NULL)
 		{
 			return 0;
@@ -362,9 +371,9 @@ uint32_t atto_convToUnicode(const char * restrict utf8, int numBytes, wchar_t **
 	}
 	return size;
 }
-uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char ** restrict putf8, uint32_t * restrict sz)
+u32 atto_toutf8(const wchar * restrict utf16, int numChars, char ** restrict putf8, usize * restrict sz)
 {
-	uint32_t size = (numChars == 0) ? 1 : (uint32_t)WideCharToMultiByte(
+	const u32 size = (numChars == 0) ? 1 : (u32)WideCharToMultiByte(
 		CP_UTF8,
 		0,
 		utf16,
@@ -376,9 +385,9 @@ uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char
 	);
 
 	// Alloc mem
-	if (sz != NULL && *sz < size)
+	if ((sz != NULL) && (*sz < size))
 	{
-		void * mem = realloc(*putf8, size * sizeof(char));
+		vptr mem = realloc(*putf8, (usize)size * sizeof(char));
 		if (mem == NULL)
 		{
 			return 0;
@@ -386,9 +395,9 @@ uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char
 		*putf8 = mem;
 		*sz    = size;
 	}
-	else if (*putf8 == NULL || sz == NULL)
+	else if ((*putf8 == NULL) || (sz == NULL))
 	{
-		*putf8 = malloc(size * sizeof(char));
+		*putf8 = malloc((usize)size * sizeof(char));
 		if (*putf8 == NULL)
 		{
 			return 0;
@@ -415,36 +424,36 @@ uint32_t atto_convFromUnicode(const wchar_t * restrict utf16, int numChars, char
 	}
 	return size;
 }
-uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** restrict lines, enum attoEOLsequence * restrict eolSeq)
+usize atto_strnToLines(wchar * restrict utf16, usize chars, wchar *** restrict lines, eolSeq_e * restrict eolSeq)
 {
 	// Count number of newline characters (to count number of lines - 1)
-	uint32_t newlines = 1;
+	usize newlines = 1;
 	
 	// Set default EOL sequence
-	*eolSeq = EOL_def;
-	for (uint32_t i = 0; i < chars; ++i)
+	*eolSeq = eolDEF;
+	for (usize i = 0; i < chars; ++i)
 	{
 		if (utf16[i] == L'\r')
 		{
-			*eolSeq = ((i + 1 < chars) && (utf16[i+1] == L'\n')) ? EOL_CRLF : EOL_CR;
+			*eolSeq = ((i + 1 < chars) && (utf16[i+1] == L'\n')) ? eolCRLF : eolCR;
 			++newlines;
-			i += (*eolSeq == EOL_CRLF);
+			i += (*eolSeq == eolCRLF);
 		}
 		else if (utf16[i] == L'\n')
 		{
-			*eolSeq = EOL_LF;
+			*eolSeq = eolLF;
 			++newlines;
 		}
 	}
-	*lines = malloc(newlines * sizeof(wchar_t *));
+	*lines = malloc(newlines * sizeof(wchar *));
 	if (*lines == NULL)
 	{
 		return 0;
 	}
 
-	bool isCRLF = (*eolSeq == EOL_CRLF);
-	uint32_t starti = 0, j = 0;
-	for (uint32_t i = 0; i < chars; ++i)
+	bool isCRLF = (*eolSeq == eolCRLF);
+	usize starti = 0, j = 0;
+	for (usize i = 0; i < chars; ++i)
 	{
 		if (utf16[i] == L'\n' || utf16[i] == L'\r')
 		{
@@ -459,28 +468,28 @@ uint32_t atto_strnToLines(wchar_t * restrict utf16, uint32_t chars, wchar_t *** 
 
 	return newlines;
 }
-uint32_t atto_tabsToSpaces(wchar_t ** restrict str, uint32_t * restrict len)
+usize atto_tabsToSpaces(wchar ** restrict str, usize * restrict len)
 {
-	uint32_t realLen = ((len == NULL || *len == 0) ? (uint32_t)wcslen(*str) + 1 : *len), realCap = realLen;
+	usize realLen = (((len == NULL) || (*len == 0)) ? (wcslen(*str) + 1) : *len), realCap = realLen;
 
 	// Conversion happens here
-	wchar_t * s = *str;
+	wchar * restrict s = *str;
 
-	for (uint32_t i = 0; i < realLen;)
+	for (usize i = 0; i < realLen;)
 	{
 		if (s[i] == L'\t')
 		{
 			if ((realLen + 3) > realCap)
 			{
 				realCap = (realLen + 3) * 2;
-				s = realloc(s, sizeof(wchar_t) * realCap);
+				s = realloc(s, sizeof(wchar) * realCap);
 				if (s == NULL)
 				{
 					return 0;
 				}
 			}
-			memmove(&s[i + 3], &s[i], sizeof(wchar_t) * (realLen - i));
-			for (uint32_t j = 0; j < 4; ++i, ++j)
+			memmove(&s[i + 3], &s[i], sizeof(wchar) * (realLen - i));
+			for (u8 j = 0; j < 4; ++i, ++j)
 			{
 				s[i] = L' ';
 			}
@@ -494,7 +503,7 @@ uint32_t atto_tabsToSpaces(wchar_t ** restrict str, uint32_t * restrict len)
 
 	*str = s;
 	// Shrink string
-	s = realloc(s, sizeof(wchar_t) * realLen);
+	s = realloc(s, sizeof(wchar) * realLen);
 	if (s != NULL)
 	{
 		*str = s;

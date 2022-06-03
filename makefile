@@ -1,5 +1,5 @@
 CC=gcc
-WARN=-Wall -Wextra -Wpedantic -Wconversion -Wunused-variable -Wshadow -Wpointer-arith -Wcast-qual -Wstrict-prototypes -Wdouble-promotion -Waggregate-return
+WARN=-Wall -Wextra -Wpedantic -Wconversion -Wunused-variable -Wshadow -Wpointer-arith -Wcast-qual -Wstrict-prototypes -Wdouble-promotion -Waggregate-return -Wunused-function -Wunused-result
 CDEFFLAGS=-std=c99 $(WARN) -municode -D UNICODE -D _UNICODE
 CFLAGS=-O3 -Wl,--strip-all,--build-id=none,--gc-sections -fno-ident -D NDEBUG
 CFLAGSD=-g -O0 -D PROFILING_ENABLE=1
@@ -9,7 +9,7 @@ OBJ=obj
 OBJD=objd
 SRC=src
 
-default: debug
+default: release
 
 $(OBJ):
 	mkdir $(OBJ)
@@ -35,6 +35,9 @@ debug_obj: $(objs_d)
 release: $(OBJ) release_obj
 release_obj: $(objs_r)
 	$(CC) $^ -o $(TARGET).exe $(CDEFFLAGS) $(CFLAGS)
+
+deb: debug
+rel: release
 
 clean:
 	rm -r -f $(OBJ)

@@ -1,10 +1,10 @@
-#include "attoData.h"
+#include "aData.h"
 #include "atto.h"
 
 
-void attoData_reset(attoData_t * restrict self)
+void aData_reset(aData_t * restrict self)
 {
-	*self = (attoData_t){
+	*self = (aData_t){
 		.conIn  = INVALID_HANDLE_VALUE,
 		.conOut = INVALID_HANDLE_VALUE,
 		.scrbuf = {
@@ -17,7 +17,7 @@ void attoData_reset(attoData_t * restrict self)
 	};
 	attoFile_reset(&self->file);
 }
-bool attoData_init(attoData_t * restrict self)
+bool aData_init(aData_t * restrict self)
 {
 	self->conIn  = GetStdHandle(STD_INPUT_HANDLE);
 	self->conOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -31,8 +31,8 @@ bool attoData_init(attoData_t * restrict self)
 		return false;
 	}
 
-	self->scrbuf.w = (uint32_t)(csbi.srWindow.Right  - csbi.srWindow.Left + 1);
-	self->scrbuf.h = (uint32_t)(csbi.srWindow.Bottom - csbi.srWindow.Top  + 1);
+	self->scrbuf.w = (u32)(csbi.srWindow.Right  - csbi.srWindow.Left + 1);
+	self->scrbuf.h = (u32)(csbi.srWindow.Bottom - csbi.srWindow.Top  + 1);
 	// Create screen buffer
 	self->scrbuf.handle = CreateConsoleScreenBuffer(
 		GENERIC_WRITE,
@@ -46,13 +46,13 @@ bool attoData_init(attoData_t * restrict self)
 		return false;
 	}
 
-	self->scrbuf.mem = malloc((size_t)(self->scrbuf.w * self->scrbuf.h) * sizeof(wchar_t));
+	self->scrbuf.mem = malloc((usize)self->scrbuf.w * (usize)self->scrbuf.h * sizeof(wchar));
 	if (self->scrbuf.mem == NULL)
 	{
 		return false;
 	}
 
-	for (uint32_t i = 0, sz = self->scrbuf.w * self->scrbuf.h; i < sz; ++i)
+	for (usize i = 0, sz = (usize)self->scrbuf.w * (usize)self->scrbuf.h; i < sz; ++i)
 	{
 		self->scrbuf.mem[i] = L' ';
 	}
@@ -67,58 +67,58 @@ bool attoData_init(attoData_t * restrict self)
 
 	return true;
 }
-void attoData_refresh(attoData_t * restrict self)
+void aData_refresh(aData_t * restrict self)
 {
 	atto_updateScrbuf(self);
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
 		self->scrbuf.handle,
 		self->scrbuf.mem,
-		self->scrbuf.w * (self->scrbuf.h - 1),
+		(DWORD)((usize)self->scrbuf.w * (usize)(self->scrbuf.h - 1)),
 		(COORD){ 0, 0 },
 		&dwBytes
 	);
 }
-void attoData_refreshAll(attoData_t * restrict self)
+void aData_refreshAll(aData_t * restrict self)
 {
 	atto_updateScrbuf(self);
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
 		self->scrbuf.handle,
 		self->scrbuf.mem,
-		self->scrbuf.w * self->scrbuf.h,
+		(DWORD)((usize)self->scrbuf.w * (usize)self->scrbuf.h),
 		(COORD){ 0, 0 },
 		&dwBytes
 	);
 }
-void attoData_statusDraw(attoData_t * restrict self, const wchar_t * message)
+void aData_statusDraw(aData_t * restrict self, const wchar * restrict message)
 {
-	uint32_t effLen = u32Min((uint32_t)wcslen(message), self->scrbuf.w);
-	wchar_t * restrict lastLine = self->scrbuf.mem + (self->scrbuf.h - 1) * self->scrbuf.w;
+	const u32 effLen = (u32)min_usize(wcslen(message), (usize)self->scrbuf.w);
+	wchar * restrict lastLine = self->scrbuf.mem + (usize)(self->scrbuf.h - 1) * (usize)self->scrbuf.w;
 	memcpy(
 		lastLine,
 		message,
-		sizeof(wchar_t) * effLen
+		sizeof(wchar) * (usize)effLen
 	);
-	for (size_t i = effLen; i < self->scrbuf.w; ++i)
+	for (u32 i = effLen; i < self->scrbuf.w; ++i)
 	{
 		lastLine[i] = L' ';
 	}
-	attoData_statusRefresh(self);
+	aData_statusRefresh(self);
 }
-void attoData_statusRefresh(attoData_t * restrict self)
+void aData_statusRefresh(aData_t * restrict self)
 {
 	DWORD dwBytes;
 	WriteConsoleOutputCharacterW(
 		self->scrbuf.handle,
-		self->scrbuf.mem + (self->scrbuf.h - 1) * self->scrbuf.w,
-		self->scrbuf.w,
+		self->scrbuf.mem + (usize)(self->scrbuf.h - 1) * (usize)self->scrbuf.w,
+		(DWORD)self->scrbuf.w,
 		(COORD){ .X = 0, .Y = (SHORT)(self->scrbuf.h - 1) },
 		&dwBytes
 	);
 }
 
-void attoData_destroy(attoData_t * restrict self)
+void aData_destroy(aData_t * restrict self)
 {
 	if (self->scrbuf.mem != NULL)
 	{

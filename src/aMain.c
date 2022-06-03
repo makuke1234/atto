@@ -1,13 +1,13 @@
 #include "atto.h"
 
-static attoData_t editor;
+static aData_t editor;
 
-int wmain(int argc, const wchar_t * argv[])
+int wmain(int argc, const wchar * argv[])
 {
 	atto_exitHandlerSetVars(&editor);
-	attoData_reset(&editor);
+	aData_reset(&editor);
 
-	const wchar_t * fileName = atto_getFileName(argc, argv);
+	const wchar * fileName = atto_getFileName(argc, argv);
 	if (fileName == NULL)
 	{
 		atto_printHelp(argv[0]);
@@ -16,7 +16,7 @@ int wmain(int argc, const wchar_t * argv[])
 
 	if (!attoFile_open(&editor.file, fileName, false))
 	{
-		atto_printErr(attoE_file);
+		atto_printErr(aerrFILE);
 		return 2;
 	}
 	attoFile_close(&editor.file);
@@ -24,31 +24,31 @@ int wmain(int argc, const wchar_t * argv[])
 	// Set console title
 	attoFile_setConTitle(&editor.file);
 
-	if (!attoData_init(&editor))
+	if (!aData_init(&editor))
 	{
-		atto_printErr(attoE_window);
+		atto_printErr(aerrWINDOW);
 		return 3;
 	}
 
-	const wchar_t * res;
+	const wchar * res;
 	if ((res = attoFile_read(&editor.file)) != NULL)
 	{
-		attoData_statusDraw(&editor, res);
+		aData_statusDraw(&editor, res);
 	}
 	else
 	{
-		wchar_t tempstr[MAX_STATUS];
+		wchar tempstr[MAX_STATUS];
 		swprintf_s(
 			tempstr,
 			MAX_STATUS,
 			L"File loaded successfully! %s%s EOL sequences",
-			(editor.file.eolSeq & EOL_CR) ? L"CR" : L"",
-			(editor.file.eolSeq & EOL_LF) ? L"LF" : L""
+			(editor.file.eolSeq & eolCR) ? L"CR" : L"",
+			(editor.file.eolSeq & eolLF) ? L"LF" : L""
 		);
-		attoData_statusDraw(&editor, tempstr);
+		aData_statusDraw(&editor, tempstr);
 	}
 
-	attoData_refresh(&editor);
+	aData_refresh(&editor);
 	while (atto_loop(&editor));
 
 	return 0;
